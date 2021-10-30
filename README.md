@@ -40,3 +40,7 @@ This is the description of the fields:
 
 
 **please note**: these are the considerations this software does, but they may not be the correct ones! DYOR and/or consult an expert!
+
+---
+
+**\*** regarding column 9 of the transactions.csv file, I know what you're thinking! It probably would have been the most useful feature of this software, but right now it's to be done by hand. This is for legacy reasons, I started doing it with an excel sheet and formulas and have continued that way. Surely in the future these calculations will be integrated into the software! Don't worry, just have a little patience.
