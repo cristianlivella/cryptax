@@ -1,6 +1,9 @@
 # CrypTax
 Software for calculating cryptocurrency capital gains for tax purposes. Calculation with LIFO method, developed with Italy in mind.
 
+![Screencast](./screencast.gif)  
+*The screencast is made with random transactions. They are not my holdings.*
+
 ## ⚠️ Please read here before use
 - This is just the software I use for my tax reports. It's not perfect and it's not production ready, use it at your own risk.
 - At the moment in Italy there is no clear regulation regarding the declaration and taxation for cryptocurrencies and capital gains, so some of the logic used in this software could come from my interpretations. I take no responsibility about it. Always DYOR (Do Your Own Research).
