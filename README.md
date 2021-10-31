@@ -20,7 +20,7 @@ In fact, it is just a script that takes in input a csv file with all your transa
 - The file must not have a header row.
 
 This is the description of the fields:
-1. **id**: unique transaction identifier, integer or string
+1. **id**: unique integer transaction identifier,
 2. **transaction_date**: in dd/mm/yyyy format
 3. **transaction type**: `purchase`, `sale` or `expense` (or the correspondents in Italian: `acquisto`, `vendita` or `spesa`)
 4. **EUR value**: the value of the transaction in euros, including commissions

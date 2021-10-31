@@ -1,0 +1,43 @@
+@page {
+    size: auto;
+}
+
+th {
+    vertical-align: middle !important;
+    text-align: center;
+}
+
+.price {
+    text-align: right;
+}
+
+.unit {
+    width: 1px;
+}
+
+.column {
+    width: 50%;
+    float: left;
+    margin-top: 8px;
+    margin-bottom: 24px;
+}
+
+@media print {
+    .pagebreak {
+        clear: both;
+        page-break-after: always;
+    }
+
+    .rightColumn {
+        width: 45% !important;
+    }
+
+    .leftColumn {
+        width: 55% !important;
+    }
+
+    canvas {
+        max-width: 100%;
+        width: auto !important;
+    }
+}
