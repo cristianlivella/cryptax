@@ -32,7 +32,7 @@ This is the description of the fields:
 7. *legacy, leave empty*
 8. *legacy, leave empty*
 9. *legacy, leave empty*
-10. **related transaction**: id of the related purchase transaction, only for `sale`/`vendita` or `expense`/`spesa` type transactions
+10. *legacy, leave empty*
 11. **exchange**: name of the exchange where the buy or sell has been done; this is only for the volume chart, you can leave it empty if you are not interested
 12. **earning category**: for `purchase`/`acquisto` type transactions with price == 0, you can set the gain category; it affects some calculations in the final report
 

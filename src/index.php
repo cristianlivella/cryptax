@@ -78,7 +78,6 @@ foreach ($rawTransactions AS $tx) {
         'crypto' => $tx[5],
         'plusvalenza' => 0.0,
         'used' => 0.0,
-        'tx_acquisto' => chr(65 + $section) . $tx[9],
         'categoria' => $tx[11],
         'exchange' => $tx[10]
     ];

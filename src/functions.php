@@ -157,7 +157,6 @@ function fetchCryptoDataFromApi($ticker, $date) {
             $stmt = $db->prepare('INSERT INTO cache (ticker, name, date, quote, expiration, found) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?, found = ?');
             $stmt->bind_param('sssdiidii', $value['ticker'], $value['name'], $value['date'], $price, $expiration, $found, $price, $expiration, $found);
             $stmt->execute();
-            echo $stmt->error;
             $stmt->close();
         }
     }
