@@ -3,27 +3,33 @@
 function getCryptoData($ticker, $date) {
     global $db, $GLOBAL_PRICES;
 
+    $date = date('Y-m-d', strtotime($date));
+
     if (isset(CUSTOM_TICKERS[$ticker])) {
         $ticker = CUSTOM_TICKERS[$ticker];
     }
 
-    if ($date > date('Y-m-d', strtotime('-2 days'))) {
-        return(getCryptoData($ticker, date('Y-m-d', strtotime('-2 days'))));
+    if ($date > date('Y-m-d', strtotime('-3 days'))) {
+        return(getCryptoData($ticker, date('Y-m-d', strtotime('-3 days'))));
     }
 
     $ticker = strtoupper($ticker);
 
-    if (isset($GLOBAL_PRICES[$ticker][$date])) {
-        return $GLOBAL_PRICES[$ticker][$date];
+    if (!isset($GLOBAL_PRICES[$ticker][$date])) {
+        $GLOBAL_PRICES[$ticker][$date] = [
+            'name' => $ticker,
+            'ticker' => $ticker,
+            'price' => 0.0,
+            'found' => false,
+            'fetched' => false
+        ];
+
+        fetchCryptoData($ticker, $date);
     }
 
-    $GLOBAL_PRICES[$ticker][$date] = null;
+    $GLOBAL_PRICES[$ticker][$date]['required'] = true;
 
-    return [
-        'name' => $ticker,
-        'ticker' => $ticker,
-        'price' => 0.0
-    ];
+    return $GLOBAL_PRICES[$ticker][$date];
 }
 
 function getCryptoName($ticker) {
@@ -52,132 +58,114 @@ function getCryptoKey($ticker) {
     }
 }
 
-// This function is a total mess, but it seems working, so for the moment I don't touch it :)
-// (Just kidding, I absolutely have to rewrite it)
-function fetchGlobalCryptoData() {
-    global $db, $GLOBAL_PRICES;
+function getDateRangeToFetch($ticker, $date, $rangeDays = 366) {
+    global $GLOBAL_PRICES;
 
-    foreach ($GLOBAL_PRICES AS $ticker => $dates) {
-        for ($j = 0; $j < 2; $j++) {
-            ksort($dates);
+    $firstDate = date('Y-m-d', strtotime($date . ' - ' . (intval($rangeDays / 2)) . ' days'));
+    $lastDate = date('Y-m-d', strtotime($date . ' + ' . (intval($rangeDays / 2)) . ' days'));
 
-            $groups = [];
+    while (($GLOBAL_PRICES[$ticker][$firstDate]['fetched'] ?? false) === true && $firstDate <= $lastDate) {
+        $firstDate = date('Y-m-d', strtotime($firstDate . ' + 1 day'));
+    }
 
-            $startDate = null;
-            $prevDate = null;
-            foreach (array_keys($dates) AS $date) {
-                if (!array_key_exists($date, $GLOBAL_PRICES[$ticker])) {
-                    echo "err $j $ticker $date \n";
-                }
-                if ($GLOBAL_PRICES[$ticker][$date] !== null) {
-                    continue;
-                }
+    while (($GLOBAL_PRICES[$ticker][$lastDate]['fetched'] ?? false) === true && $firstDate <= $lastDate) {
+        $lastDate = date('Y-m-d', strtotime($lastDate . ' - 1 day'));
+    }
 
-                for ($i = 0; $i < 2; $i++) {
-                    if ($startDate === null) {
-                        $startDate = $date;
-                    }
+    return [$firstDate, $lastDate];
+}
 
-                    if ($i === 0) {
-                        if ($date > date('Y-m-d', strtotime($startDate . ' + 365 days'))) {
-                            $groups[] = ['start' => $startDate, 'end' => $prevDate ?? $startDate];
-                            $startDate = null;
-                            $prevDate = null;
-                        }
-                    }
-                }
+function fetchCryptoDataFromDb($ticker, $date) {
+    global $GLOBAL_PRICES, $db;
 
-                if ($prevDate === null || (strtotime($date) - strtotime($prevDate)) < (60 * 60 * 24 * 30)) {
-                    $prevDate = $date;
-                    continue;
-                }
+    [$firstDate, $lastDate] = getDateRangeToFetch($ticker, $date);
 
-                $groups[] = ['start' => $startDate, 'end' => $prevDate ?? $startDate];
-                $startDate = $date;
-                $prevDate = null;
-            }
+    if ($firstDate > $lastDate) {
+        // if firstDate and lastDate overlap, all the required data have already been fetched
+        return;
+    }
 
-            if ($startDate && $prevDate) {
-                $groups[] = ['start' => $startDate, 'end' => $prevDate];
-            }
+    // fetch prices from db cache
+    $now = time();
+    $stmt = $db->prepare('SELECT date, quote, ticker, name, found FROM cache WHERE ticker = ? AND date >= ? AND date <= ? AND (expiration = 0 OR expiration > ?)');
+    $stmt->bind_param('sssi', $ticker, $firstDate, $lastDate, $now);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
 
-            foreach ($groups AS $group) {
-                if ($j === 0) {
-                    $now = time();
-                    $stmt = $db->prepare('SELECT date, quote, ticker, name FROM cache WHERE ticker = ? AND date >= ? AND date <= ? AND (expiration = 0 OR expiration > ?)');
-                    $stmt->bind_param('sssi', $ticker, $group['start'], $group['end'], $now);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    $stmt->close();
-                    $db->next_result();
+    while ($resultArray = $result->fetch_assoc()) {
+        $resultDate = $resultArray['date'];
 
-                    while ($resultArray = $result->fetch_assoc()) {
-                        if (array_key_exists($resultArray['date'], $GLOBAL_PRICES[$ticker])) {
-                            $name = $resultArray['name'] ?? '';
-                            $newTicker = $resultArray['ticker'] ?? $ticker;
-                            $price = floatVal($resultArray['quote'] ?? 0);
+        $GLOBAL_PRICES[$ticker][$resultDate] = [
+            'name' => $resultArray['name'],
+            'ticker' => $resultArray['ticker'],
+            'price' => $resultArray['quote'],
+            'required' => $GLOBAL_PRICES[$ticker][$resultDate]['required'] ?? false,
+            'fetched' => true,
+            'found' => $resultArray['found'] ? true : false
+        ];
+    }
+}
 
-                            $GLOBAL_PRICES[$ticker][$resultArray['date']] = [
-                                'name' => $name,
-                                'ticker' => $newTicker,
-                                'price' => $price
-                            ];
-                        }
-                    }
-                } elseif ($j === 1) {
-                    $start = microtime(true);
-                    //echo '<!-- (REQ) ' . $ticker . ', ' . $group['start'] . '-' . $group['end'] . ' -->' . PHP_EOL;
-                    $values = json_decode(@file_get_contents('http://cryptohistory.one/api/' . $ticker . '/' . $group['start'] . '/' . $group['end']), true);
-                    $end = microtime(true);
-                    //echo '<!-- (RES) ' . $ticker . ', ' . $group['start'] . '-' . $group['end'] . ': ' . round($end - $start, 4) . ' -->' . PHP_EOL;
+function fetchCryptoDataFromApi($ticker, $date) {
+    global $GLOBAL_PRICES, $db;
 
-                    $realValues = $values;
+    [$firstDate, $lastDate] = getDateRangeToFetch($ticker, $date);
 
-                    if ($values === null) {
-                        $currDate = $group['start'];
-                        $name = $ticker;
-                        $price = 0;
-                        while ($currDate <= $group['end']) {
-                            $expiration = time() + (60 * 60 * 24 * 7);
-                            $stmt2 = $db->prepare('INSERT INTO cache (ticker, name, date, quote, expiration) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?');
-                            $stmt2->bind_param('sssdidi', $ticker, $name, $currDate, $price, $expiration, $price, $expiration);
-                            $stmt2->execute();
-                            $stmt2->close();
+    if ($firstDate > $lastDate) {
+        // if firstDate and lastDate overlap, all the required data have already been fetched
+        return;
+    }
 
-                            $currDate = date('Y-m-d', strtotime($currDate . ' + 1 day'));
-                        }
-                    }
+    // fetch prices from cryptohistory.one API
+    $start = microtime(true);
+    echo '<!-- (REQ) ' . $ticker . ', ' . $firstDate . '-' . $lastDate . ' -->' . PHP_EOL;
+    $values = json_decode(@file_get_contents('http://cryptohistory.one/api/' . $ticker . '/' . $firstDate . '/' . $lastDate), true);
+    $end = microtime(true);
+    echo '<!-- (RES) ' . $ticker . ', ' . $firstDate . '-' . $lastDate . ': ' . round($end - $start, 4) . ' -->' . PHP_EOL;
 
-                    if (is_iterable($values)) {
-                        if (isset($values['ticker'])) {
-                            $realValues = [$values];
-                        }
+    if ($values === null) {
+        // The request to the API did not produce any result (the cryptocurrency was not found, or a communication error was encountered).
+        // Consider the price = 0 and cache it for 24 hours.
+        $values = [];
+        $currDate = $firstDate;
+        $price = 0.0;
 
-                        foreach ($realValues AS $value) {
-                            if (array_key_exists($value['date'], $GLOBAL_PRICES[$ticker])) {
-                                $name = $value['name'] ?? '';
-                                $newTicker = $value['ticker'] ?? $ticker;
-                                $price = floatVal($value['price_eur'] ?? 0);
+        while ($currDate <= $lastDate) {
+            $values[] = [
+                'date' => $currDate,
+                'name' => $ticker,
+                'ticker' => $ticker,
+                'price_eur' => 0.0,
+                'cache_max_age' => 60 * 60 * 24
+            ];
+            $currDate = date('Y-m-d', strtotime($currDate . ' + 1 day'));
+        }
+    }
 
-                                $GLOBAL_PRICES[$ticker][$value['date']] = [
-                                    'name' => $name,
-                                    'ticker' => $newTicker,
-                                    'price' => $price
-                                ];
-
-                                $expiration = time() + $value['cache_max_age'];
-                                $stmt2 = $db->prepare('INSERT INTO cache (ticker, name, date, quote, expiration) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?');
-                                $stmt2->bind_param('sssdidi', $ticker, $name, $value['date'], $price, $expiration, $price, $expiration);
-                                $stmt2->execute();
-                                $stmt2->close();
-                            }
-                        }
-                    }
-                }
-            }
+    if (is_iterable($values)) {
+        if (isset($values['ticker'])) {
+            // a single day price was returned; put it in an array to make the next foreach work
+            $values = [$values];
         }
 
+        foreach ($values AS $value) {
+            $price = floatVal($value['price_eur']);
+            $expiration = time() + $value['cache_max_age'];
+            $stmt = $db->prepare('INSERT INTO cache (ticker, name, date, quote, expiration, found) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?, found = ?');
+            $stmt->bind_param('sssdisdis', $value['ticker'], $value['name'], $value['date'], $price, $expiration, $value['found'], $price, $expiration, $value['found']);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
+
+    // re fetch the data from the db
+    fetchCryptoDataFromDb($ticker, $date);
+}
+
+function fetchCryptoData($ticker, $date) {
+    fetchCryptoDataFromDb($ticker, $date);
+    fetchCryptoDataFromApi($ticker, $date);
 }
 
 function incrementExchangeVolume($exchange, $value) {

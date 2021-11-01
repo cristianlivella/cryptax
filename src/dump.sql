@@ -8,7 +8,8 @@ CREATE TABLE `cache` (
   `name` varchar(300) NOT NULL,
   `date` date NOT NULL,
   `quote` double NOT NULL,
-  `expiration` int(11) NOT NULL
+  `expiration` int(11) NOT NULL,
+  `found` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 ALTER TABLE `cache`
