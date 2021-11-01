@@ -35,7 +35,7 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
 
             <?php
             foreach ($cryptoInfo as $thisCrypto) {
-                if ($thisCrypto['value_start'] === $thisCrypto['value_end'] && $thisCrypto['value_start'] === 0.0) {
+                if (($thisCrypto['value_start'] === $thisCrypto['value_end'] && $thisCrypto['value_start'] === 0.0) || $thisCrypto['average_balance_eur'] === 0.0) {
                     // skip cryptocurrencies without price
                      continue;
                 }

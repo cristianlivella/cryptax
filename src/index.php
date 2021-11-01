@@ -39,6 +39,7 @@ for ($i = 0; $i < 2; $i++) {
 
     $cryptoInfo = [];           // info and calculations results
     $transactions = [];         // transaction array
+    $cryptoPurchases = [];      // purchase transactions for each cryptocurrency
 
     $earnings = [
         'plusvalenze' => 0.0,   // capital gain
@@ -76,17 +77,18 @@ for ($i = 0; $i < 2; $i++) {
             die('Error! Max supported numerations: 26');
         }
 
+        $txId = chr(65 + $section) . $tx[0];
         $ticker = $tx[5];
 
-        $transactions[] = [
-            'id' => chr(65 + $section) . $tx[0],
+        $transactions[$txId] = [
+            'id' => $txId,
             'date' => str_replace('/', '-', $tx[1]),
             'type' => $tx[2],
             'amount' => floatval($tx[4]),
             'value' => floatval($tx[3]),
             'crypto' => $tx[5],
-            'plusvalenza' => floatval(str_replace(' ', '', $tx[8])),
-            'spesa' => floatval($tx[4]),
+            'plusvalenza' => 0.0,
+            'used' => 0.0,
             'tx_acquisto' => chr(65 + $section) . $tx[9],
             'categoria' => $tx[11],
             'exchange' => $tx[10]
@@ -111,19 +113,19 @@ for ($i = 0; $i < 2; $i++) {
                 'sum_balance' => 0.000000,
                 'start_of_year_balance_eur' => -1.000000,
                 'end_of_year_balance_eur' => 0.000000,
-                'average_balance' => 0,
-                'average_balance_eur' => 0,
-                'max_balance' => 0
+                'average_balance' => 0.0,
+                'average_balance_eur' => 0.0,
+                'max_balance' => 0.0
             ];
         }
     }
 
     // SORT THE TRANSACTIONS LIST BY DATE
-    usort($transactions, function ($a, $b) {
+    uasort($transactions, function ($a, $b) {
         if ($a['date'] === $b['date']) {
-            return $a['id'] > $b['id'];
+            return strnatcmp($a['id'], $b['id']);
         }
-        return strtotime($a['date']) > strtotime($b['date']);
+        return strtotime($a['date']) - strtotime($b['date']);
     });
 
     $firstDayOfYear = mktime(0, 0, 0, 1, 1, $fiscalYear);
@@ -166,6 +168,9 @@ for ($i = 0; $i < 2; $i++) {
             $cryptoInfo[$tx['crypto']]['balance'] += $tx['amount'];
             $exchange = $tx['exchange'];
 
+            // save the id in $cryptoPurchases, used for capital gains calculation
+            $cryptoPurchases[$tx['crypto']][] = $tx['id'];
+
             if ($tx['value'] === 0.0) {
                 // if the value of the purchase is 0, then it's an earn
                 if (!isset($earnings['nr'][$tx['categoria']])) {
@@ -204,27 +209,37 @@ for ($i = 0; $i < 2; $i++) {
             // transaction type = vendita || spesa
             $guadagnoRealizzato = 0.0;
             $cryptoInfo[$tx['crypto']]['balance'] -= $tx['amount'];
+            $txInCurrentFiscalYear = intval(date('Y', strtotime($tx['date']))) === $fiscalYear;
+
+            // if the transaction is a sell or an expense, find the relative purchase transaction(s)
+            $purchaseTxs = [];
+            $txAmountRemaining = $tx['amount'];
+            $j = count($cryptoPurchases[$tx['crypto']]);
+
+            // until we have found all the purchase transactions, we iterate the array $cryptoPurchases[$tx['crypto']] backwards (LIFO)
+            while ($txAmountRemaining > 0 && $j-- > 0) {
+                $thisPurchaseId = $cryptoPurchases[$tx['crypto']][$j];
+                $thisPurchaseUse = min($txAmountRemaining, ($transactions[$thisPurchaseId]['amount'] - $transactions[$thisPurchaseId]['used']));
+                $txAmountRemaining -= $thisPurchaseUse;
+                $transactions[$thisPurchaseId]['used'] += $thisPurchaseUse;
+                $purchaseTxs[$thisPurchaseId] = $thisPurchaseUse;
+            }
+
+            // if $txAmountRemaining is not 0, there is some error in the input
+            if ($txAmountRemaining > 0) {
+                die('Error! Cannot find all purchase transactions for ' . $tx['id']);
+            }
 
             if (intval(date('Y', strtotime($tx['date']))) === $fiscalYear) {
-                if ((in_array($tx['type'], ['vendita', 'sale']) && $tx['value'] === $tx['plusvalenza']) || in_array($tx['type'], ['spesa', 'expense'])) {
-                    // if the transaction is a sell of an earned crypto or an expense, find the relative purchase transaction
-                    $purchaseTx = null;
-                    foreach ($transactions AS $tx2) {
-                        if ($tx2['id'] === $tx['tx_acquisto']) {
-                            $purchaseTx = $tx2;
-                            break;
-                        }
-                    }
-                    if ($purchaseTx === null) {
-                        die('Error! Cannot find purchase transaction for ' . $tx['id']);
-                    }
+                foreach ($purchaseTxs AS $purchaseTxId => $amountUsed) {
+                    $purchaseTx = $transactions[$purchaseTxId];
 
                     $exchange = $tx['exchange'];
                     $earnExchange = $purchaseTx['exchange'];
 
-                    if (in_array($tx['type'], ['vendita', 'sale'])) {
+                    if (in_array($tx['type'], ['vendita', 'sale']) && $purchaseTx['value'] === 0.0) {
                         // the transaction if the sell of an earned crypto; calcluate the "guadagno realizzato" and sync the values in $earnings array
-                        $guadagnoRealizzato = $tx['amount'] * getCryptoPrice($purchaseTx['crypto'], date('Y-m-d', strtotime($purchaseTx['date'])));
+                        $guadagnoRealizzato = $amountUsed * getCryptoPrice($purchaseTx['crypto'], date('Y-m-d', strtotime($purchaseTx['date'])));
                         if (intval(date('Y', strtotime($purchaseTx['date']))) === $fiscalYear) {
                             $earnings['rac'][$purchaseTx['categoria']] += $guadagnoRealizzato;
                             $earnings['nr'][$purchaseTx['categoria']] -= $guadagnoRealizzato;
@@ -235,17 +250,14 @@ for ($i = 0; $i < 2; $i++) {
                             $earnings['rap'][$purchaseTx['categoria']] += $guadagnoRealizzato;
                             $earnings['rap_d'][$purchaseTx['categoria']][$earnExchange] += $guadagnoRealizzato;
                         }
-
-                        $earnings['plusvalenze'] -= $guadagnoRealizzato;
-                        incrementExchangeVolume($exchange, $tx['value']);
                     } elseif (in_array($tx['type'], ['expense', 'spesa'])) {
                         // the transaction is an expense
                         if ($purchaseTx['value'] > 0) {
                             // the purchase is just a regular purchase
-                            $purchaseCost = ($purchaseTx['value'] / $purchaseTx['amount']) * $tx['amount'];
+                            $purchaseCost = ($purchaseTx['value'] / $purchaseTx['amount']) * $amountUsed;
                         } else {
                             // the purchase is actually an earn; calcluate the "guadagno realizzato" and sync the values in $earnings array
-                            $purchaseCost = $tx['amount'] * getCryptoPrice($purchaseTx['crypto'], date("Y-m-d", strtotime($purchaseTx['date'])));
+                            $purchaseCost = $amountUsed * getCryptoPrice($purchaseTx['crypto'], date('Y-m-d', strtotime($purchaseTx['date'])));
                             if (intval(date('Y', strtotime($purchaseTx['date']))) === $fiscalYear) {
                                 $earnings['rac'][$purchaseTx['categoria']] += $purchaseCost;
                                 $earnings['nr'][$purchaseTx['categoria']] -= $purchaseCost;
@@ -258,21 +270,23 @@ for ($i = 0; $i < 2; $i++) {
                             }
                         }
 
-                        $sellValue = $tx['amount'] * getCryptoPrice($tx['crypto'], date("Y-m-d", strtotime($tx['date'])));
+                        $sellValue = $amountUsed * getCryptoPrice($tx['crypto'], date("Y-m-d", strtotime($tx['date'])));
                         $earnings['plusvalenze'] += ($sellValue - $purchaseCost);
                         $totalTakings += $sellValue;
                         $totalCosts += $purchaseCost;
-
-                        incrementExchangeVolume($exchange, $sellValue);
                     }
-                }
 
-                if (in_array($tx['type'], ['vendita', 'sale'])) {
-                    // fix the capital gain and other values for sales
-                    $earnings['plusvalenze'] += $tx['plusvalenza'];
-                    $totalInvestment -= $tx['value'];
-                    $totalTakings += $tx['value'];
-                    $totalCosts += ($tx['value'] - $tx['plusvalenza'] + $guadagnoRealizzato);
+                    if (in_array($tx['type'], ['vendita', 'sale'])) {
+                        // fix the capital gain and other values for sales
+                        $thisTxValue = $tx['value'] / $tx['amount'] * $amountUsed;
+                        $thixTxPlusvalenza = ($thisTxValue - ($purchaseTx['value'] / $purchaseTx['amount'] * $amountUsed) - $guadagnoRealizzato);
+                        $earnings['plusvalenze'] += $thixTxPlusvalenza;
+                        $totalInvestment -= $thisTxValue;
+                        $totalTakings += $thisTxValue;
+                        $totalCosts += ($thisTxValue - $thixTxPlusvalenza);
+
+                        incrementExchangeVolume($exchange, $thisTxValue);
+                    }
                 }
             }
         } else {
