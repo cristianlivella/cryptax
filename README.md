@@ -14,7 +14,7 @@ At the moment, the features of this software are quite limited, but they are the
 In fact, it is just a script that takes in input a csv file with all your transactions, and elaborates a quite complete and printable report. In the future I plan to make it a more complete software, maybe even with a nice front-end.
 
 ## ❓ How to use it
-- Cut the project folder in a web server with PHP;
+- Put the project folder in a web server with PHP;
 - create a copy of the file `config.sample.php` in `config.php`, and set inside it the credentials of the MySQL database (it will be used as a cache for cryptocurrency prices) and the location of the `transactions.csv` file;
 - visit `index.php` through a web browser.
 
@@ -23,7 +23,7 @@ In fact, it is just a script that takes in input a csv file with all your transa
 - The file must not have a header row.
 
 This is the description of the fields:
-1. **id**: unique integer transaction identifier,
+1. **id**: unique integer transaction identifier
 2. **transaction_date**: in dd/mm/yyyy format
 3. **transaction type**: `purchase`, `sale` or `expense` (or the correspondents in Italian: `acquisto`, `vendita` or `spesa`)
 4. **EUR value**: the value of the transaction in euros, including commissions
