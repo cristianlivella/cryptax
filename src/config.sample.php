@@ -11,3 +11,5 @@ const HEADER = 'Mario Rossi';
 const CUSTOM_TICKERS = [
     'MY_TICKER' => 'CRYPTOHISTORY_TICKER'
 ];
+
+const FILE_FORMAT_VERSION = 1;
