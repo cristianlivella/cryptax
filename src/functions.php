@@ -137,7 +137,8 @@ function fetchCryptoDataFromApi($ticker, $date) {
                 'name' => $ticker,
                 'ticker' => $ticker,
                 'price_eur' => 0.0,
-                'cache_max_age' => 60 * 60 * 24
+                'cache_max_age' => 60 * 60 * 24,
+                'found' => false
             ];
             $currDate = date('Y-m-d', strtotime($currDate . ' + 1 day'));
         }
@@ -151,10 +152,12 @@ function fetchCryptoDataFromApi($ticker, $date) {
 
         foreach ($values AS $value) {
             $price = floatVal($value['price_eur']);
+            $found = $value['found'] ? 1 : 0;
             $expiration = time() + $value['cache_max_age'];
             $stmt = $db->prepare('INSERT INTO cache (ticker, name, date, quote, expiration, found) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?, found = ?');
-            $stmt->bind_param('sssdisdis', $value['ticker'], $value['name'], $value['date'], $price, $expiration, $value['found'], $price, $expiration, $value['found']);
+            $stmt->bind_param('sssdiidii', $value['ticker'], $value['name'], $value['date'], $price, $expiration, $found, $price, $expiration, $found);
             $stmt->execute();
+            echo $stmt->error;
             $stmt->close();
         }
     }
