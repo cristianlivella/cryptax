@@ -29,7 +29,7 @@ This is the description of the fields:
 4. **cryptocurrency amount**: amount of cryptocurrency bought, sold or spent; without thousands separators, using the dot `.` as decimal separator
 5. **cryptocurrency ticker**: usually a 3 characters string, like `BTC`, `ETH` or `BNB`
 6. **exchange**: name of the exchange where the buy or sell has been done; this is only for the volume chart, you can leave it empty if you are not interested
-7. **earning category**: for `purchase`/`acquisto` type transactions with price == 0, you can set the gain category; it affects some calculations in the final report
+7. **earning category**: for `purchase`/`acquisto` type transactions with price = 0, you can set the earning category; it affects some calculations in the final report
 
 ### Earning categories
 - `airdrop`: a capital gain is calculated equal to the value of the cryptocurrency on the day of the transaction
