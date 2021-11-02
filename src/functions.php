@@ -64,6 +64,14 @@ function getDateRangeToFetch($ticker, $date, $rangeDays = 366) {
     $firstDate = date('Y-m-d', strtotime($date . ' - ' . (intval($rangeDays / 2)) . ' days'));
     $lastDate = date('Y-m-d', strtotime($date . ' + ' . (intval($rangeDays / 2)) . ' days'));
 
+    if ($firstDate > date('Y-m-d', strtotime('-3 days'))) {
+        $firstDate = date('Y-m-d', strtotime('-3 days'));
+    }
+
+    if ($lastDate > date('Y-m-d', strtotime('-3 days'))) {
+        $lastDate = date('Y-m-d', strtotime('-3 days'));
+    }
+
     while (($GLOBAL_PRICES[$ticker][$firstDate]['fetched'] ?? false) === true && $firstDate <= $lastDate) {
         $firstDate = date('Y-m-d', strtotime($firstDate . ' + 1 day'));
     }

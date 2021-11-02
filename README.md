@@ -19,22 +19,17 @@ In fact, it is just a script that takes in input a csv file with all your transa
 - visit `index.php` through a web browser.
 
 ## 📄 The transactions.csv file
-- The csv file must have 12 columns, separated by semicolon `;`.  
+- The csv file must have 7 columns, separated by semicolon `;`.  
 - The file must not have a header row.
 
 This is the description of the fields:
-1. **id**: unique integer transaction identifier
-2. **transaction_date**: in dd/mm/yyyy format
-3. **transaction type**: `purchase`, `sale` or `expense` (or the correspondents in Italian: `acquisto`, `vendita` or `spesa`)
-4. **EUR value**: the value of the transaction in euros, including commissions
-5. **cryptocurrency amount**: amount of cryptocurrency bought, sold or spent; without thousands separators, using the dot `.` as decimal separator
-6. **cryptocurrency ticker**: usually a 3 characters string, like `BTC`, `ETH` or `BNB`
-7. *legacy, leave empty*
-8. *legacy, leave empty*
-9. *legacy, leave empty*
-10. *legacy, leave empty*
-11. **exchange**: name of the exchange where the buy or sell has been done; this is only for the volume chart, you can leave it empty if you are not interested
-12. **earning category**: for `purchase`/`acquisto` type transactions with price == 0, you can set the gain category; it affects some calculations in the final report
+1. **transaction_date**: in dd/mm/yyyy format
+2. **transaction type**: `purchase`, `sale` or `expense` (or the correspondents in Italian: `acquisto`, `vendita` or `spesa`)
+3. **EUR value**: the value of the transaction in euros, including commissions
+4. **cryptocurrency amount**: amount of cryptocurrency bought, sold or spent; without thousands separators, using the dot `.` as decimal separator
+5. **cryptocurrency ticker**: usually a 3 characters string, like `BTC`, `ETH` or `BNB`
+6. **exchange**: name of the exchange where the buy or sell has been done; this is only for the volume chart, you can leave it empty if you are not interested
+7. **earning category**: for `purchase`/`acquisto` type transactions with price == 0, you can set the gain category; it affects some calculations in the final report
 
 ### Earning categories
 - `airdrop`: a capital gain is calculated equal to the value of the cryptocurrency on the day of the transaction
