@@ -58,31 +58,48 @@ unset($rawTransactions[count($rawTransactions) - 1]);
 foreach ($rawTransactions AS $tx) {
     $tx = explode(';', $tx);
 
-    if (!is_numeric($tx[0])) {
-        continue;
-    } elseif ($lastId > $tx[0]) {
-        $section++;
-    } elseif ($section > 25) {
-        die('Error! Max supported numerations: 26');
+    if (FILE_FORMAT_VERSION === 1) {
+        if (!is_numeric($tx[0])) {
+            continue;
+        } elseif ($lastId > $tx[0]) {
+            $section++;
+        } elseif ($section > 25) {
+            die('Error! Max supported numerations: 26');
+        }
+
+        $lastId = $tx[0];
+        $txId = chr(65 + $section) . $tx[0];
+        $ticker = $tx[5];
+
+        $transactions[$txId] = [
+            'id' => $txId,
+            'date' => str_replace('/', '-', $tx[1]),
+            'type' => $tx[2],
+            'amount' => floatval($tx[4]),
+            'value' => floatval($tx[3]),
+            'crypto' => $ticker,
+            'plusvalenza' => 0.0,
+            'used' => 0.0,
+            'categoria' => $tx[11],
+            'exchange' => $tx[10]
+        ];
+    } elseif (FILE_FORMAT_VERSION === 2) {
+        $lastId++;
+        $ticker = $tx[4];
+
+        $transactions[$lastId] = [
+            'id' => $lastId,
+            'date' => str_replace('/', '-', $tx[0]),
+            'type' => $tx[1],
+            'amount' => floatval($tx[3]),
+            'value' => floatval($tx[2]),
+            'crypto' => $ticker,
+            'plusvalenza' => 0.0,
+            'used' => 0.0,
+            'categoria' => $tx[6],
+            'exchange' => $tx[5]
+        ];
     }
-
-    $txId = chr(65 + $section) . $tx[0];
-    $ticker = $tx[5];
-
-    $transactions[$txId] = [
-        'id' => $txId,
-        'date' => str_replace('/', '-', $tx[1]),
-        'type' => $tx[2],
-        'amount' => floatval($tx[4]),
-        'value' => floatval($tx[3]),
-        'crypto' => $tx[5],
-        'plusvalenza' => 0.0,
-        'used' => 0.0,
-        'categoria' => $tx[11],
-        'exchange' => $tx[10]
-    ];
-
-    $lastId = $tx[0];
 
     if (!isset($cryptoInfo[$ticker])) {
         $name = getCryptoName($ticker);
