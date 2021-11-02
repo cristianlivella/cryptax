@@ -415,7 +415,7 @@ foreach ($cryptoInfo as $crypto) {
     }
 }
 
-// €51645,69 = 1.000.00 LIRE, art. 67 TUIR
+// €51.645,69 = 100.000.000 LIRE, art. 67 TUIR
 $exceeded51kThreshold = $totalValues['valore_massimo_inizio_anno'] > 51645.69;
 
 $daysList = [];
