@@ -387,6 +387,29 @@ for ($i = 0; $i <= $daysInYear; $i++) {
     $dailyTotalValuesReal[$i] = round($dailyTotalValuesReal[$i], 2);
 }
 
+// Check if the value of all cryptocurrencies, using the price at the begin of the year,
+// exceeded €123 for 7 consecutive working days.
+// €51.645,69 = 100.000.000 LIRE, art. 67 TUIR
+$exceeded51kThreshold = false;
+$daysOverThreshold = 0;
+
+$holidays = getHolidays($fiscalYear);
+for ($i = 0; $i <= $daysInYear; $i++) {
+    // sundays and holidays are not working days
+    if (getDayOfWeek($i, $fiscalYear) > 0 && !in_array($i, $holidays)) {
+        if ($dailyTotalValuesLegal[$i] > 51645.69) {
+            $daysOverThreshold++;
+        } else {
+            $daysOverThreshold = 0;
+        }
+
+        if ($daysOverThreshold === 7) {
+            $exceeded51kThreshold = true;
+        }
+    }
+}
+
+
 // calculate the total values (sum of each cryptocurrency)
 $totalValues = [
     'saldo_inizio' => 0.0,
@@ -414,9 +437,6 @@ foreach ($cryptoInfo as $crypto) {
         $totalValues['valore_massimo_inizio_anno'] += $crypto['max_balance_eur_inizio_anno'];
     }
 }
-
-// €51.645,69 = 100.000.000 LIRE, art. 67 TUIR
-$exceeded51kThreshold = $totalValues['valore_massimo_inizio_anno'] > 51645.69;
 
 $daysList = [];
 for ($i = 0; $i <= $daysInYear; $i++) {

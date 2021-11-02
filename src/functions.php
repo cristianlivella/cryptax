@@ -199,3 +199,35 @@ function formatBalance($balance, $price) {
 
     return number_format($balance, $digits, ',', '.');
 }
+
+function getHolidays($year) {
+    $holidays = [
+        [1, 1],     // Capodanno
+        [6, 1],     // Epifania
+        [5, 4],     // Anniversario della Liberazione
+        [1, 5],     // Festa del Lavoro
+        [2, 6],     // Festa della Repubblica
+        [15, 8],    // Assunzione / Ferragosto
+        [1, 11],    // Tutti i santi
+        [8, 12],    // Immacolata concezione
+        [25, 12],   // Natale
+        [26, 12],   // Santo Stefano
+    ];
+
+    $easter = easter_date($year);
+    $holidays[] = explode('-', date('d-m', $easter));                   // Pasqua
+    $holidays[] = explode('-', date('d-m', $easter + (60 * 60 * 24)));  // Pasquetta
+
+    $holidayDays = [];
+
+    foreach ($holidays AS $holiday) {
+        $holidayDays[] = intval(date('z', mktime(0, 0, 0, $holiday[1], $holiday[0], $year)));
+    }
+
+    return $holidayDays;
+}
+
+function getDayOfWeek($day, $year) {
+    // get the day of the week (0 sunday - 6 saturday) based on day of year (0-365)
+    return intval(date('w', DateTime::createFromFormat('Y z', $year . ' ' . $day)->getTimestamp()));
+}
