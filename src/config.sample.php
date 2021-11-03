@@ -12,6 +12,4 @@ const CUSTOM_TICKERS = [
     'MY_TICKER' => 'CRYPTOHISTORY_TICKER'
 ];
 
-const FILE_FORMAT_VERSION = 2;
-
 date_default_timezone_set('Europe/Rome');
