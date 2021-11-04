@@ -73,6 +73,10 @@ foreach ($rawTransactions AS $tx) {
         'categoria' => $tx[6],
         'exchange' => $tx[5]
     ];
+    
+    if ($transactions[$lastId]['categoria'] === 'interest') {
+        $transactions[$lastId]['categoria'] = 'interessi';
+    }
 
     if (!isset($cryptoInfo[$ticker])) {
         $name = getCryptoName($ticker);
