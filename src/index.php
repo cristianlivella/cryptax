@@ -189,7 +189,6 @@ foreach ($transactions AS $tx) {
         }
     } elseif (in_array($tx['type'], ['vendita', 'sale', 'spesa', 'expense'])) {
         // transaction type = vendita || spesa
-        $guadagnoRealizzato = 0.0;
         $cryptoInfo[$tx['crypto']]['balance'] -= $tx['amount'];
         $txInCurrentFiscalYear = intval(date('Y', strtotime($tx['date']))) === $fiscalYear;
 
@@ -218,6 +217,8 @@ foreach ($transactions AS $tx) {
 
                 $exchange = $tx['exchange'];
                 $earnExchange = $purchaseTx['exchange'];
+
+                $guadagnoRealizzato = 0.0;
 
                 if (in_array($tx['type'], ['vendita', 'sale']) && $purchaseTx['value'] === 0.0) {
                     // the transaction if the sell of an earned crypto; calcluate the "guadagno realizzato" and sync the values in $earnings array
