@@ -95,7 +95,7 @@ class CryptoInfoBag
     }
 
     public function getDailyValues($priceDate = null) {
-        $dailyValues = range(0, DateHelper::old_getNumerOfDaysInYear($this->fiscalYear));
+        $dailyValues = array_fill(0, DateHelper::old_getNumerOfDaysInYear($this->fiscalYear) + 1, 0);
 
         foreach ($this->cryptoInfo AS $cryptocurrency) {
             foreach ($cryptocurrency->getDailyValues($priceDate) AS $day => $value) {
