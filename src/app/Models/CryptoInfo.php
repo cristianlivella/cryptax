@@ -22,20 +22,6 @@ class CryptoInfo
     private $name;
 
     /**
-     * Price on 01/01 of the selected fiscal year.
-     *
-     * @var float
-     */
-    private $priceStartOfYear;
-
-    /**
-     * Price on 31/12 of the selected fiscal year.
-     *
-     * @var float
-     */
-    private $priceEndOfYear;
-
-    /**
      * Current cryptocurrency balance.
      *
      * @var float
@@ -48,20 +34,6 @@ class CryptoInfo
      * @var float
      */
     private $balanceStartOfYear = 0.0;
-
-    /**
-     * Sum of the daily balances. Used to calculate the average balance.
-     *
-     * @var float
-     */
-    private $sumDailyBalances = 0.0;
-
-    /**
-     * Max balance in the selected fiscal year.
-     *
-     * @var float
-     */
-    private $maxBalance = 0.0;
 
     /**
      * Day of the fiscal year up to where the processing was done, 0-365.
@@ -87,8 +59,6 @@ class CryptoInfo
     public function __construct($ticker, $fiscalYear) {
         $this->ticker = CryptoInfoHelper::getCryptoTicker($ticker);
         $this->name = CryptoInfoHelper::getCryptoName($ticker);
-        $this->priceStartOfYear = CryptoInfoHelper::getCryptoPrice($ticker, $fiscalYear . '01-01');
-        $this->priceEndOfYear = CryptoInfoHelper::getCryptoPrice($ticker, $fiscalYear . '-12-31');
         $this->fiscalYear = $fiscalYear;
     }
 

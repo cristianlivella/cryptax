@@ -53,14 +53,14 @@ class Report
      *
      * @var float
      */
-    private float $currentYearPurchaseCost = 0.0;
+    public float $currentYearPurchaseCost = 0.0;
 
     /**
      * Incomes from the sale of cryptocurrencies in the selected fiscal year.
      *
      * @var float
      */
-    private float $currentYearIncome = 0.0;
+    public float $currentYearIncome = 0.0;
 
     /**
      * Volumes for each exchange.
@@ -73,9 +73,9 @@ class Report
     /**
      * Selected fiscal year.
      *
-     * @var integer
+     * @var integer|null
      */
-    private int $fiscalYear;
+    private ?int $fiscalYear = null;
 
     public function __construct($transactionsFileContent) {
         $this->transactionsBag = new TransactionsBag($transactionsFileContent);
@@ -88,6 +88,10 @@ class Report
      * @return void
      */
     public function elaborateReport(int $year) {
+        if ($this->fiscalYear === $year) {
+            return;
+        }
+
         $this->setFiscalYear($year);
 
         $firstDayOfYear = DateHelper::getFirstDayOfYear($this->fiscalYear);
@@ -234,8 +238,8 @@ class Report
      *
      * @return float
      */
-    public function getCapitalGains() {
-        return $this->earningsBag->getCapitalGains() + $this->earningsBag->getAirdropReceived();
+    public function getCapitalGains($withoutAirdrop = false) {
+        return $this->earningsBag->getCapitalGains() + ($withoutAirdrop ? 0.0 : $this->earningsBag->getAirdropReceived());
     }
 
     /**
@@ -249,6 +253,10 @@ class Report
         }
 
         return $this->getCapitalGains() * self::CAPITAL_GAINS_TAX_RATE;
+    }
+
+    public function getInterests() {
+        return $this->earningsBag->getInterests();
     }
 
     /**
@@ -275,7 +283,7 @@ class Report
      * @return boolean
      */
     public function shouldFillRT() {
-        return $this->getCapitalGainsTax() !== 0.0;
+        return $this->getCapitalGains() !== 0.0;
     }
 
     /**
@@ -292,19 +300,19 @@ class Report
      *
      * @return array
      */
-    public function getSummary() {
+    public function getSummary($rawValues = false) {
         return $this->recursiveFormatNumbers([
             'current_year_investment' => $this->currentYearInvestment,
             'current_year_purchase_cost' => $this->currentYearPurchaseCost,
             'current_year_income' => $this->currentYearIncome,
-            'capital_gains' => $this->earningsBag->getCapitalGains(),
-            'capital_gains_and_airdrop' => $this->earningsBag->getCapitalGains() + $this->earningsBag->getAirdropReceived(),
+            'capital_gains' => $this->getCapitalGains(true),
+            'capital_gains_and_airdrop' => $this->getCapitalGains(),
             'capital_gains_tax' => $this->getCapitalGainsTax(),
             'interests' => $this->earningsBag->getInterests(),
             'interests_tax' => $this->earningsBag->getInterests() * self::INTERESTS_EARNING_TAX_RATE,
             'total_values' => $this->cryptoInfoBag->getTotalValues()
-        ]) + [
-            'no_tax_area_threshold_exceeded' => $this->get51kThresholdExceeded(),
+        ], 2, false, $rawValues) + [
+            'no_tax_area_threshold_exceeded' => $this->get51kThresholdExceeded() || true,
         ];
     }
 
@@ -338,15 +346,18 @@ class Report
                 'rw' => $this->shouldFillRW(),
                 'rt' => $this->shouldFillRT(),
                 'rm' => $this->shouldFillRM()
-            ],
-            'rw' => [
-                'initial_value' => (
-                    $this->fiscalYear === $this->getFirstYear() ?
-                    $this->transactionsBag->transactions[1]->value :
-                    $this->cryptoInfoBag->getTotalValues()['value_start_of_year']
-                ),
-                'final_value' => $this->cryptoInfoBag->getTotalValues()['average_value']
             ]
+        ];
+    }
+
+    public function getModelloRedditiSectionRwInfo() {
+        return [
+            'initial_value' => (
+                $this->fiscalYear === $this->getFirstYear() ?
+                $this->transactionsBag->transactions[1]->value :
+                $this->cryptoInfoBag->getTotalValues()['value_start_of_year']
+            ),
+            'final_value' => $this->cryptoInfoBag->getTotalValues()['average_value']
         ];
     }
 
@@ -377,7 +388,11 @@ class Report
      * @param integer $digits
      * @return array
      */
-    private function recursiveFormatNumbers($array, $digits = 2, $roundOnly = false) {
+    private function recursiveFormatNumbers($array, $digits = 2, $roundOnly = false, $pass = false) {
+        if ($pass) {
+            return $array;
+        }
+
         foreach ($array AS $key => $value) {
             if (is_array($value)) {
                 $array[$key] = $this->recursiveFormatNumbers($value, $digits, $roundOnly);
