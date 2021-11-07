@@ -2,11 +2,7 @@
 
 namespace CrypTax\Models;
 
-use CrypTax\Helpers\VersionHelper;
-
-use setasign\Fpdi\Fpdi;
-
-class ModelloRedditiRt extends ModelloRedditiSection
+abstract class ModelloRedditiRt
 {
     public static function fill($pdf, $info, $fiscalYear) {
         $countPages = $pdf->setSourceFile(dirname(__FILE__) . '/../../resources/pdf/PF-RT.pdf');
@@ -16,54 +12,53 @@ class ModelloRedditiRt extends ModelloRedditiSection
 
             $pdf->addPage();
             $pdf->useTemplate($templateId);
-
-            self::addHeaderFooter($pdf, $fiscalYear);
+            $pdf->addHeaderFooter($fiscalYear, $page === 1);
 
             if ($page === 1) {
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetFont('Courier', 'B', 10);
 
                 // RT21 - Totale dei corrispettivi
-                self::writeRTL($pdf, 192, 91.2, $info['rt']['total_incomes']);
+                $pdf->writeRTL(192, 91.2, $info['rt']['total_incomes']);
 
                 // RT22 - Totale dei costi o dei valori di acquisto
-                self::writeRTL($pdf, 192, 95.4, $info['rt']['total_costs']);
+                $pdf->writeRTL(192, 95.4, $info['rt']['total_costs']);
 
                 // RT23.1 - Minusvalenze
-                self::writeRTL($pdf, 118.4, 99.6, $info['rt']['capital_losses']);
+                $pdf->writeRTL(118.4, 99.6, $info['rt']['capital_losses']);
 
                 // RT23.3 - Plusvalenze
-                self::writeRTL($pdf, 192, 99.6, $info['rt']['capital_gains']);
+                $pdf->writeRTL(192, 99.6, $info['rt']['capital_gains']);
 
                 if ($info['rt']['compensate_capital_losses']) {
                     // RT24.1 - Eccedenza minusvalenze anni precedenti
-                    self::writeRTL($pdf, 98.4, 103.8, $info['rt']['capital_losses_previous_years']);
+                    $pdf->writeRTL(98.4, 103.8, $info['rt']['capital_losses_previous_years']);
 
                     // RT24.4 - Eccedenza minusvalenze
-                    self::writeRTL($pdf, 192, 103.8, $info['rt']['capital_losses_previous_years']);
+                    $pdf->writeRTL(192, 103.8, $info['rt']['capital_losses_previous_years']);
 
                     // RT26 - Differenza
-                    self::writeRTL($pdf, 192, 112.2, $info['rt']['capital_gains_compensated']);
+                    $pdf->writeRTL(192, 112.2, $info['rt']['capital_gains_compensated']);
 
                     // RT27 - Imposta sostitutiva
-                    self::writeRTL($pdf, 192, 116.4, $info['rt']['capital_gains_compensated_tax']);
+                    $pdf->writeRTL(192, 116.4, $info['rt']['capital_gains_compensated_tax']);
 
                     // RT29 - Imposta sostitutiva dovuta
-                    self::writeRTL($pdf, 192, 124.8, $info['rt']['capital_gains_compensated_tax']);
+                    $pdf->writeRTL(192, 124.8, $info['rt']['capital_gains_compensated_tax']);
 
                     // RT93 - Minusvalenze non compensate nell'anno
                     for ($i = 4; $i >= 0; $i--) {
-                        self::writeRTL($pdf, 192 - $i * 27.8, 218, $info['rt']['remaining_capital_losses'][$fiscalYear - $i] ?? 0);
+                        $pdf->writeRTL(192 - $i * 27.8, 218, $info['rt']['remaining_capital_losses'][$fiscalYear - $i] ?? 0);
                     }
                 } else {
                     // RT26 - Differenza
-                    self::writeRTL($pdf, 192, 112.2, $info['rt']['capital_gains']);
+                    $pdf->writeRTL(192, 112.2, $info['rt']['capital_gains']);
 
                     // RT27 - Imposta sostitutiva
-                    self::writeRTL($pdf, 192, 116.4, $info['rt']['capital_gains_tax']);
+                    $pdf->writeRTL(192, 116.4, $info['rt']['capital_gains_tax']);
 
                     // RT29 - Imposta sostitutiva dovuta
-                    self::writeRTL($pdf, 192, 124.8, $info['rt']['capital_gains_tax']);
+                    $pdf->writeRTL(192, 124.8, $info['rt']['capital_gains_tax']);
                 }
             }
         }

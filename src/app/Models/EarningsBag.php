@@ -11,14 +11,30 @@ class EarningsBag
 
     const TYPES = [self::RAP, self::RAC, self::NR];
 
+    /**
+     * Earnings array.
+     *
+     * @var array
+     */
     private $earnings;
 
+    /**
+     * Initialize the earnings array.
+     */
     public function __construct() {
         $this->earnings = [
             'capital_gains' => 0.0
         ];
     }
 
+    /**
+     * Add an earning amount.
+     *
+     * @param string $exchange
+     * @param string $category
+     * @param string $type
+     * @param float $value
+     */
     public function addEarning($exchange, $category, $type, $value) {
         if ($category === self::CAPITAL_GAINS) {
             $this->earnings['capital_gains'] += $value;
@@ -26,6 +42,7 @@ class EarningsBag
         }
 
         if ($type === self::RAC) {
+            // if the type is RAC (realizzato anno corrente), then we have to decrement the NR (non realizzato) total value
             $this->addEarning($exchange, $category, self::NR, - $value);
         }
 
@@ -36,18 +53,38 @@ class EarningsBag
         $this->earnings[$category][$exchange][$type] += $value;
     }
 
+    /**
+     * Get the selected fiscal year capital gains.
+     *
+     * @return float
+     */
     public function getCapitalGains() {
         return $this->earnings[self::CAPITAL_GAINS] ?? 0.0;
     }
 
+    /**
+     * Get the selected fiscal year interests received value.
+     *
+     * @return float
+     */
     public function getInterests() {
         return $this->getCategoryTotalValue(Transaction::INTEREST);
     }
 
+    /**
+     * Get the selected fiscal year airdrop received value.
+     *
+     * @return float
+     */
     public function getAirdropReceived() {
         return $this->getCategoryTotalValue(Transaction::AIRDROP);
     }
 
+    /**
+     * Get the categories list with the relatives Italian names.
+     *
+     * @return array
+     */
     public function getCategoriesForRender() {
         $categories = [];
 
@@ -70,6 +107,12 @@ class EarningsBag
         return $categories;
     }
 
+    /**
+     * Get the total value of a given category.
+     *
+     * @param string $category
+     * @return float
+     */
     private function getCategoryTotalValue($category) {
         $totalValue = 0.0;
 
@@ -86,9 +129,15 @@ class EarningsBag
         return $totalValue;
     }
 
+    /**
+     * Get the info used for the report rendering.
+     *
+     * @return array
+     */
     public function getInfoForRender() {
-        $earnings = [];
-        $earnings['capital_gains'] = $this->earnings['capital_gains'];
+        $earnings = [
+            'capital_gains' => $this->earnings['capital_gains']
+        ];
 
         foreach ($this->earnings AS $category => $exchanges) {
             if ($category === self::CAPITAL_GAINS) continue;
@@ -109,6 +158,11 @@ class EarningsBag
         return $earnings;
     }
 
+    /**
+     * Get the detailed info used for the report rendering.
+     *
+     * @return array
+     */
     public function getDetailedInfoForRender() {
         $detailedEarnings = $this->earnings;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace CryptAx\Controllers;
+namespace CrypTax\Controllers;
 
 class WebAppController
 {

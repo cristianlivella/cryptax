@@ -9,8 +9,26 @@
         <link href="./public/style.css" rel="stylesheet">
     </head>
     <body>
-        <h2>{{ header }}</h2>
-        <h4>Report criptovalute anno {{ fiscal_year }}</h4>
+        <div style="display: flex">
+            <div>
+                <h2>{{ header }}</h2>
+                <h4>Report criptovalute anno {{ fiscal_year }}</h4>
+            </div>
+
+            <div class="selectors">
+                <div>
+                    {% for year, link in years %}
+                        <a href="{{ link }}" class="{{ year is same as(fiscal_year) ? 'selected' : ''}}">{{ year }}</a>
+                    {% endfor %}
+                </div>
+
+                <div class="document_selectors">
+                    {% for form, link in forms %}
+                        <a href="{{ link }}" target="_blank">{{ form_names[form] }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
         <table class='table table-bordered table-sm'>
             <tr>

@@ -2,11 +2,7 @@
 
 namespace CrypTax\Models;
 
-use CrypTax\Helpers\VersionHelper;
-
-use setasign\Fpdi\Fpdi;
-
-class ModelloRedditiRm extends ModelloRedditiSection
+abstract class ModelloRedditiRm
 {
     public static function fill($pdf, $info, $fiscalYear) {
         $countPages = $pdf->setSourceFile(dirname(__FILE__) . '/../../resources/pdf/PF-RM.pdf');
@@ -16,24 +12,23 @@ class ModelloRedditiRm extends ModelloRedditiSection
 
             $pdf->addPage();
             $pdf->useTemplate($templateId);
-
-            self::addHeaderFooter($pdf, $fiscalYear, $page === 1);
+            $pdf->addHeaderFooter($fiscalYear, $page === 1);
 
             if ($page === 1) {
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetFont('Courier', 'B', 10);
 
                 // RM12.1 - Tipo
-                self::writeRTL($pdf, 50, 121, 'G');
+                $pdf->writeRTL(50, 121, 'G');
 
                 // RM12.3 - Ammontare reddito
-                self::writeRTL($pdf, 94.5, 121, $info['rm']['interests']);
+                $pdf->writeRTL(94.5, 121, $info['rm']['interests']);
 
                 // RM12.4 - Aliquota
-                self::writeRTL($pdf, 108, 121, $info['rm']['tax_rate']);
+                $pdf->writeRTL(108, 121, $info['rm']['tax_rate']);
 
                 // RM12.6 - Imposta sostitutiva dovuta
-                self::writeRTL($pdf, 159, 121, $info['rm']['tax']);
+                $pdf->writeRTL(159, 121, $info['rm']['tax']);
             }
         }
     }

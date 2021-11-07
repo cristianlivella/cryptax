@@ -5,10 +5,11 @@ namespace CrypTax\Models;
 use CrypTax\Exceptions\InvalidTransactionException;
 use CrypTax\Exceptions\TooFewTransactionFields;
 
-use CrypTax\Helpers\DateHelper;
-use CrypTax\Helpers\CryptoInfoHelper;
+use CrypTax\Utils\DateUtils;
+use CrypTax\Utils\CryptoInfoUtils;
 
-class Transaction {
+class Transaction
+{
     const PURCHASE = 'purchase';
     const SALE = 'sale';
     const EXPENSE = 'expense';
@@ -107,9 +108,9 @@ class Transaction {
     }
 
     private function setDate($date) {
-        $this->date = DateHelper::getDateFromItFormat($date);
+        $this->date = DateUtils::getDateFromItFormat($date);
 
-        if ($this->date === '1970-01-01' || $this->date > DateHelper::getToday()) {
+        if ($this->date === '1970-01-01' || $this->date > DateUtils::getToday()) {
             throw new InvalidTransactionException($this->id, 'date', $date);
         }
     }
@@ -127,7 +128,7 @@ class Transaction {
     }
 
     private function setTicker($ticker) {
-        $this->ticker = CryptoInfoHelper::getCryptoTicker(trim($ticker));
+        $this->ticker = CryptoInfoUtils::getCryptoTicker(trim($ticker));
 
         if ($this->ticker === '') {
             throw new InvalidTransactionException($this->id, 'ticker', $ticker);
@@ -146,7 +147,7 @@ class Transaction {
         if (is_numeric($value) && floatval($value) > 0) {
             $this->value = floatval($value);
         } elseif ((is_numeric($value) && floatval($value) === 0.0 ) || trim($value) === '') {
-            $this->value = CryptoInfoHelper::getCryptoPrice($this->ticker, $this->date) * $this->amount;
+            $this->value = CryptoInfoUtils::getCryptoPrice($this->ticker, $this->date) * $this->amount;
         } else {
             throw new InvalidTransactionException($this->id, 'value',  $value);
         }

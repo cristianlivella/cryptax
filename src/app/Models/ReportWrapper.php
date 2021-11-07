@@ -13,8 +13,9 @@ class ReportWrapper
     }
 
     public function getSummary() {
+        $currentYear = $this->report->getCurrentYear();
+
         $reportSummaries = [];
-        $this->report->getFirstYear();
 
         for ($year = $this->report->getFirstYear(); $year <= $this->report->getLastYear(); $year++) {
             $this->report->elaborateReport($year);
@@ -24,7 +25,10 @@ class ReportWrapper
                 $reportSummaries[$year] = $summary;
             }
         }
+
         $reportSummaries = $this->calculateCapitalLossesCompensation($reportSummaries);
+
+        $this->report->elaborateReport($currentYear);
 
         return NumberUtils::recursiveFormatNumbers($reportSummaries, 0, true);
     }
@@ -37,12 +41,65 @@ class ReportWrapper
         return $this->report->getInfoForRender();
     }
 
-    public function getModelloRedditi($year) {
+    public function getReport($year) {
+        $this->elaborateReport($year);
+
+        $loader = new \Twig\Loader\FilesystemLoader('resources/views/');
+        $twig = new \Twig\Environment($loader);
+
+        $baseUrl = '//' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+        if (strrpos($baseUrl, '?')) {
+            $baseUrl = substr($baseUrl, 0, strrpos($baseUrl, '?'));
+        }
+
+        $years = array_keys($this->getSummary());
+
+        // The last key is "total_compensation", not a year.
+        // Not very nice, to be fixed in the future.
+        unset($years[count($years) - 1]);
+
+        $yearSelectors = [];
+
+        foreach ($years AS $thisYear) {
+            $yearSelectors[$thisYear] = $baseUrl . '?' . http_build_query([
+                'year' => $thisYear
+            ]);
+        }
+
+        $forms = [];
+
+        if ($this->report->shouldFillModelloRedditi()) {
+            $forms['pf'] = $baseUrl . '?' . http_build_query([
+                'year' => $year,
+                'action' => 'pdf_modello_redditi'
+            ]);
+        }
+
+        if (($this->report->shouldFillRT() && $this->report->getCapitalGainsTax() > 0) || $this->report->shouldFillRM()) {
+            $forms['f24'] = $baseUrl . '?' . http_build_query([
+                'year' => $year,
+                'action' => 'pdf_modello_f24'
+            ]);
+        }
+
+        return $twig->render('report.html', [
+            'header' => HEADER,
+            'years' => $yearSelectors,
+            'forms' => $forms,
+            'form_names' => [
+                'pf' => 'Redditi Persone Fisiche ' . ($year + 1),
+                'f24' => 'Modello di pagamento F24'
+            ]
+        ] + $this->report->getInfoForRender());
+    }
+
+    public function getModelloRedditi($year, $compensateCapitalLosses = true) {
         $this->elaborateReport($year);
 
         $info = $this->report->getInfoForModelloRedditi() + [
             'rw' => $this->report->getModelloRedditiSectionRwInfo(),
-            'rt' => $this->getSectionRtInfo($year, true),
+            'rt' => $this->getSectionRtInfo($year, $compensateCapitalLosses),
             'rm' => $this->getSectionRmInfo($year)
         ];
 
@@ -58,7 +115,10 @@ class ReportWrapper
         if ($this->report->shouldFillRT()) {
             $rtInfo = $this->getSectionRtInfo($year, true);
             $capitalGainsTax = $compensateCapitalLosses ? $rtInfo['capital_gains_compensated_tax'] : $rtInfo['capital_gains_tax'];
-            $taxes[] = ['code' => 1100, 'amount' => $capitalGainsTax];
+
+            if ($capitalGainsTax > 0) {
+                $taxes[] = ['code' => 1100, 'amount' => $capitalGainsTax];
+            }
         }
 
         if ($this->report->shouldFillRM()) {
@@ -77,14 +137,14 @@ class ReportWrapper
         $capitalGains = round($this->report->getCapitalGains());
 
         $info = [
-            'total_incomes' => round($this->report->currentYearIncome),
+            'total_incomes' => round($this->report->currentYearPurchaseCost) + $capitalGains,
             'total_costs' => round($this->report->currentYearPurchaseCost),
             'capital_gains' => $capitalGains > 0 ? $capitalGains : '',
             'capital_losses' => $capitalGains < 0 ? abs($capitalGains) : '',
             'capital_losses_previous_years' => max(0, $capitalGains - $summary[$year]['capital_gains_compensated']),
             'capital_gains_compensated' => round($summary[$year]['capital_gains_compensated']),
-            'capital_gains_compensated_tax' => round(round($summary[$year]['capital_gains_compensated']) * Report::CAPITAL_GAINS_TAX_RATE),
-            'capital_gains_tax' => round($capitalGains * Report::CAPITAL_GAINS_TAX_RATE),
+            'capital_gains_compensated_tax' => max(0, round(round($summary[$year]['capital_gains_compensated']) * Report::CAPITAL_GAINS_TAX_RATE)),
+            'capital_gains_tax' => max(0, round($capitalGains * Report::CAPITAL_GAINS_TAX_RATE)),
             'compensate_capital_losses' => $compensateCapitalLosses,
             'remaining_capital_losses' => []
         ];

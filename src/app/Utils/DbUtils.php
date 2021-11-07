@@ -1,10 +1,10 @@
 <?php
 
-namespace CrypTax\Helpers;
+namespace CrypTax\Utils;
 
 use Exception;
 
-class DbHelper
+class DbUtils
 {
     private static $instance;
     private $connection;

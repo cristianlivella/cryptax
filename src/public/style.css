@@ -22,6 +22,20 @@ th {
     margin-bottom: 24px;
 }
 
+.selectors {
+    flex-grow: 1;
+    text-align: right;
+    padding: 14px;
+}
+
+.document_selectors > * {
+    margin-left: 8px;
+}
+
+a.selected {
+    font-weight: bold;
+}
+
 @media print {
     .pagebreak {
         clear: both;
@@ -34,6 +48,10 @@ th {
 
     .leftColumn {
         width: 55% !important;
+    }
+
+    .selectors {
+        display: none;
     }
 
     canvas {

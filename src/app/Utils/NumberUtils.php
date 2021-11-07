@@ -5,12 +5,12 @@ namespace CrypTax\Utils;
 class NumberUtils
 {
     /**
-     * Round and format all numbers in in array, recursively.
+     * Round and format all numbers in an array, recursively.
      *
      * @param array $array
      * @param integer $digits
-     * @param  boolean $roundOnly [description]
-     * @param  boolean $pass      [description]
+     * @param  boolean $roundOnly
+     * @param  boolean $pass
      * @return array
      */
     public static function recursiveFormatNumbers($array, $digits = 2, $roundOnly = false, $pass = false) {

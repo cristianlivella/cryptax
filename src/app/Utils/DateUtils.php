@@ -1,10 +1,10 @@
 <?php
 
-namespace CrypTax\Helpers;
+namespace CrypTax\Utils;
 
 use DateTime;
 
-class DateHelper {
+class DateUtils {
     /**
      * Get date in Y-m-d format from string.
      *

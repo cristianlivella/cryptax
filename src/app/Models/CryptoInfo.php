@@ -2,8 +2,9 @@
 
 namespace CrypTax\Models;
 
-use CrypTax\Helpers\DateHelper;
-use CrypTax\Helpers\CryptoInfoHelper;
+use CrypTax\Models\Transaction;
+use CrypTax\Utils\CryptoInfoUtils;
+use CrypTax\Utils\DateUtils;
 
 class CryptoInfo
 {
@@ -56,12 +57,23 @@ class CryptoInfo
      */
     private $fiscalYear;
 
+    /**
+     * Initialize the cryptocurrency name and ticker and set the fiscal year.
+     *
+     * @param string $ticker
+     * @param integer $fiscalYear
+     */
     public function __construct($ticker, $fiscalYear) {
-        $this->ticker = CryptoInfoHelper::getCryptoTicker($ticker);
-        $this->name = CryptoInfoHelper::getCryptoName($ticker);
+        $this->ticker = CryptoInfoUtils::getCryptoTicker($ticker);
+        $this->name = CryptoInfoUtils::getCryptoName($ticker);
         $this->fiscalYear = $fiscalYear;
     }
 
+    /**
+     * Save the balance at the beginning of the fiscal year.
+     *
+     * @return void
+     */
     public function saveBalanceStartOfYear() {
         $this->balanceStartOfYear = $this->balance;
     }
@@ -79,6 +91,13 @@ class CryptoInfo
         }
     }
 
+    /**
+     * Increment the cryptocurrency balance.
+     *
+     * @param float $amount
+     * @param Transaction $transaction
+     * @return void
+     */
     public function incrementBalance($amount, $transaction = null) {
         $this->balance += $amount;
 
@@ -87,59 +106,113 @@ class CryptoInfo
         }
     }
 
+    /**
+     * Get the cryptocurrency price at the day 01/01 of the selected fiscal year.
+     *
+     * @return float
+     */
     public function getPriceStartOfYear() {
-        return CryptoInfoHelper::getCryptoPrice($this->ticker, DateHelper::getFirstDayOfYear($this->fiscalYear));
+        return CryptoInfoUtils::getCryptoPrice($this->ticker, DateUtils::getFirstDayOfYear($this->fiscalYear));
     }
 
+    /**
+     * Get the cryptocurrency price at the day 31/12 of the selected fiscal year.
+     *
+     * @return float
+     */
     public function getPriceEndOfYear() {
-        $this->setBalancesUntilDay(DateHelper::old_getNumerOfDaysInYear($this->fiscalYear) + 1);
-        return CryptoInfoHelper::getCryptoPrice($this->ticker, DateHelper::getLastDayOfYear($this->fiscalYear));
+        $this->setBalancesUntilDay(DateUtils::old_getNumerOfDaysInYear($this->fiscalYear) + 1);
+        return CryptoInfoUtils::getCryptoPrice($this->ticker, DateUtils::getLastDayOfYear($this->fiscalYear));
     }
 
+    /**
+     * Get the cryptocurrency EUR value at the day 01/01 of the selected fiscal year.
+     *
+     * @return float
+     */
     public function getValueStartOfYear() {
         return $this->getPriceStartOfYear() * $this->balanceStartOfYear;
     }
 
+    /**
+     * Get the cryptocurrency EUR value at the day 31/12 of the selected fiscal year.
+     *
+     * @return float
+     */
     public function getValueEndOfYear() {
         return $this->getPriceEndOfYear() * $this->balance;
     }
 
+    /**
+     * Get the average EUR value (giacenza media) in the selected fiscal year.
+     *
+     * @param  string $priceDate the specified day price is used
+     * @return float
+     */
     public function getAverageValue($priceDate = '12-31') {
         $dailyBalancesSum = array_sum($this->dailyBalances);
-        $daysInYear = DateHelper::old_getNumerOfDaysInYear($this->fiscalYear);
-        $price = CryptoInfoHelper::getCryptoPrice($this->ticker, $this->fiscalYear . '-' . $priceDate);
+        $daysInYear = DateUtils::getNumberOfDaysInYear($this->fiscalYear);
+        $price = CryptoInfoUtils::getCryptoPrice($this->ticker, $this->fiscalYear . '-' . $priceDate);
 
-        return $dailyBalancesSum / ($daysInYear + 1) * $price;
+        return $dailyBalancesSum / $daysInYear * $price;
     }
 
-    public function getMaxValue($priceData = '12-31') {
-        $price = CryptoInfoHelper::getCryptoPrice($this->ticker, $this->fiscalYear . '-' . $priceData);
+    /**
+     * Get the maximum EUR value in the selected fiscal year.
+     *
+     * @param  string $priceDate the specified day price is used
+     * @return [type]            [description]
+     */
+    public function getMaxValue($priceDate = '12-31') {
+        $price = CryptoInfoUtils::getCryptoPrice($this->ticker, $this->fiscalYear . '-' . $priceDate);
 
         return max($this->dailyBalances) * $price;
     }
 
+    /**
+     * Get the daily values using the price at the beginning of the fiscal year.
+     *
+     * @return float[]
+     */
     public function getDailyValuesStartOfYear() {
         return $this->getDailyValues($this->fiscalYear . '-01-01');
     }
 
+    /**
+     * Get the daily values using the price at the end of the fiscal year.
+     *
+     * @return float[]
+     */
     public function getDailyValuesEndOfYear() {
         return $this->getDailyValues($this->fiscalYear . '-12-31');
     }
 
+    /**
+     * Get the daily values using the price at the specified date.
+     * If priceDate is null, real daily prices are used.
+     *
+     * @param string $priceDate
+     * @return float[]
+     */
     public function getDailyValues($priceDate = null) {
         return array_map(function ($balance, $day) use ($priceDate) {
             if ($priceDate === null) {
-                $dateToFetch = DateHelper::getDateFromDayOfYear($day, $this->fiscalYear);
+                $dateToFetch = DateUtils::getDateFromDayOfYear($day, $this->fiscalYear);
             } else {
                 $dateToFetch = $priceDate;
             }
 
-            $price = CryptoInfoHelper::getCryptoPrice($this->ticker, $dateToFetch);
+            $price = CryptoInfoUtils::getCryptoPrice($this->ticker, $dateToFetch);
 
             return $balance * $price;
         }, $this->dailyBalances, array_keys($this->dailyBalances));
     }
 
+    /**
+     * Get the info used for the report rendering.
+     *
+     * @return array
+     */
     public function getInfoForRender() {
         $info = [
             'name' => $this->name,
@@ -168,6 +241,13 @@ class CryptoInfo
         return $info;
     }
 
+    /**
+     * Format the balance based on the price.
+     *
+     * @param float $balance
+     * @param float $price
+     * @return string
+     */
     private function formatBalance($balance, $price) {
         $digits = 2;
 

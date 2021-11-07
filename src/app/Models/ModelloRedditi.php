@@ -2,9 +2,8 @@
 
 namespace CrypTax\Models;
 
-use CrypTax\Helpers\VersionHelper;
-
-use setasign\Fpdi\Fpdi;
+use CrypTax\Models\PdfDocument;
+use CrypTax\Utils\VersionUtils;
 
 class ModelloRedditi
 {
@@ -12,8 +11,7 @@ class ModelloRedditi
     private $fiscalYear;
 
     public function __construct($info) {
-        $this->pdf = new Fpdi();
-        $this->pdf->SetAutoPageBreak(true, 0);
+        $this->pdf = new PdfDocument();
 
         $this->fiscalYear = $info['fiscal_year'];
 
@@ -33,6 +31,4 @@ class ModelloRedditi
     public function getPdf() {
         return $this->pdf->Output();
     }
-
-
 }

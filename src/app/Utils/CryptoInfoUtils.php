@@ -1,8 +1,8 @@
 <?php
 
-namespace CrypTax\Helpers;
+namespace CrypTax\Utils;
 
-class CryptoInfoHelper
+class CryptoInfoUtils
 {
     /**
      * API endpoint host.
@@ -14,11 +14,11 @@ class CryptoInfoHelper
     private static $prices = [];
 
     public static function getCryptoName($ticker) {
-        return self::getCryptoData($ticker, DateHelper::getToday())['name'];
+        return self::getCryptoData($ticker, DateUtils::getToday())['name'];
     }
 
     public static function getCryptoTicker($ticker) {
-        return self::getCryptoData($ticker, DateHelper::getToday())['ticker'];
+        return self::getCryptoData($ticker, DateUtils::getToday())['ticker'];
     }
 
     public static function getCryptoPrice($ticker, $date) {
@@ -36,14 +36,14 @@ class CryptoInfoHelper
 
     private static function getCryptoData($ticker, $date) {
         //var_dump([$ticker, $date]);
-        $date = DateHelper::getDateFromString($date);
+        $date = DateUtils::getDateFromString($date);
 
         if (isset(CUSTOM_TICKERS[$ticker])) {
             $ticker = CUSTOM_TICKERS[$ticker];
         }
 
-        if ($date > DateHelper::getDateFromString('-3 days')) {
-            return self::getCryptoData($ticker, DateHelper::getDateFromString('-3 days'));
+        if ($date > DateUtils::getDateFromString('-3 days')) {
+            return self::getCryptoData($ticker, DateUtils::getDateFromString('-3 days'));
         }
 
         $ticker = strtoupper($ticker);
@@ -71,23 +71,23 @@ class CryptoInfoHelper
     }
 
     private static function getDateRangeToFetch($ticker, $date, $rangeDays = 366) {
-        $firstDate = DateHelper::getDateFromString($date . ' - ' . (intval($rangeDays / 2)) . ' days');
-        $lastDate = DateHelper::getDateFromString($date . ' + ' . (intval($rangeDays / 2)) . ' days');
+        $firstDate = DateUtils::getDateFromString($date . ' - ' . (intval($rangeDays / 2)) . ' days');
+        $lastDate = DateUtils::getDateFromString($date . ' + ' . (intval($rangeDays / 2)) . ' days');
 
-        if ($firstDate > DateHelper::getDateFromString('-3 days')) {
-            $firstDate = DateHelper::getDateFromString('-3 days');
+        if ($firstDate > DateUtils::getDateFromString('-3 days')) {
+            $firstDate = DateUtils::getDateFromString('-3 days');
         }
 
-        if ($lastDate > DateHelper::getDateFromString('-3 days')) {
-            $lastDate = DateHelper::getDateFromString('-3 days');
+        if ($lastDate > DateUtils::getDateFromString('-3 days')) {
+            $lastDate = DateUtils::getDateFromString('-3 days');
         }
 
         while ((self::$prices[$ticker][$firstDate]['fetched'] ?? false) && $firstDate <= $lastDate) {
-            $firstDate = DateHelper::getDateFromString($firstDate . ' + 1 day');
+            $firstDate = DateUtils::getDateFromString($firstDate . ' + 1 day');
         }
 
         while ((self::$prices[$ticker][$lastDate]['fetched'] ?? false) && $firstDate <= $lastDate) {
-            $lastDate = DateHelper::getDateFromString($lastDate . ' - 1 day');
+            $lastDate = DateUtils::getDateFromString($lastDate . ' - 1 day');
         }
 
         return [$firstDate, $lastDate];
@@ -102,7 +102,7 @@ class CryptoInfoHelper
         }
 
         $currentTime = time();
-        $stmt = DbHelper::getConnection()->prepare('SELECT date, quote, ticker, name, found FROM cache WHERE ticker = ? AND date >= ? AND date <= ? AND (expiration = 0 OR expiration > ?)');
+        $stmt = DbUtils::getConnection()->prepare('SELECT date, quote, ticker, name, found FROM cache WHERE ticker = ? AND date >= ? AND date <= ? AND (expiration = 0 OR expiration > ?)');
         $stmt->bind_param('sssi', $ticker, $firstDate, $lastDate, $currentTime);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -150,7 +150,7 @@ class CryptoInfoHelper
                     'found' => false
                 ];
 
-                $currDate = DateHelper::getDateFromString($currDate . ' + 1 day');
+                $currDate = DateUtils::getDateFromString($currDate . ' + 1 day');
             }
         }
 
@@ -164,7 +164,7 @@ class CryptoInfoHelper
                 $price = floatVal($value['price_eur']);
                 $found = $value['found'] ? 1 : 0;
                 $expiration = time() + $value['cache_max_age'];
-                $stmt = DbHelper::getConnection()->prepare('INSERT INTO cache (ticker, name, date, quote, expiration, found) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?, found = ?');
+                $stmt = DbUtils::getConnection()->prepare('INSERT INTO cache (ticker, name, date, quote, expiration, found) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?, found = ?');
                 $stmt->bind_param('sssdiidii', $value['ticker'], $value['name'], $value['date'], $price, $expiration, $found, $price, $expiration, $found);
                 $stmt->execute();
                 $stmt->close();

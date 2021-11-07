@@ -1,8 +1,8 @@
 <?php
 
-namespace CrypTax\Helpers;
+namespace CrypTax\Utils;
 
-class VersionHelper
+class VersionUtils
 {
     public static function getVersionAndDate() {
         return self::getVersion() . ' ' . self::getVersionDate();

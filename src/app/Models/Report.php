@@ -2,17 +2,11 @@
 
 namespace CrypTax\Models;
 
-use CrypTax\Exceptions\CannotFindPurchasesException;
-use CrypTax\Exceptions\InvalidTransactionException;
 use CrypTax\Exceptions\InvalidYearException;
-use CrypTax\Exceptions\NegativeBalanceException;
-use CrypTax\Helpers\CryptoInfoHelper;
-use CrypTax\Helpers\DateHelper;
-use CrypTax\Models\CryptoInfo;
 use CrypTax\Models\Transaction;
-use CrypTax\Models\TransactionBag;
-
-use DateTime;
+use CrypTax\Models\TransactionsBag;
+use CrypTax\Utils\DateUtils;
+use CrypTax\Utils\NumberUtils;
 
 class Report
 {
@@ -94,8 +88,8 @@ class Report
 
         $this->setFiscalYear($year);
 
-        $firstDayOfYear = DateHelper::getFirstDayOfYear($this->fiscalYear);
-        $lastDayOfYear = DateHelper::getLastDayOfYear($this->fiscalYear);
+        $firstDayOfYear = DateUtils::getFirstDayOfYear($this->fiscalYear);
+        $lastDayOfYear = DateUtils::getLastDayOfYear($this->fiscalYear);
 
         foreach ($this->transactionsBag->transactions AS $tx) {
             if ($tx->date > $lastDayOfYear) {
@@ -107,15 +101,15 @@ class Report
                 $this->cryptoInfoBag->saveStartOfYearSnapshot();
             }
 
-            if (DateHelper::getYearFromDate($tx->date) === $this->fiscalYear) {
+            if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
                 // Set the daily cryptocurrencies balances until reach the current transaction date.
-                $this->cryptoInfoBag->setBalancesUntilDay(DateHelper::getDayOfYear($tx->date));
+                $this->cryptoInfoBag->setBalancesUntilDay(DateUtils::getDayOfYear($tx->date));
             }
 
             if ($tx->type === Transaction::PURCHASE) {
                 $this->cryptoInfoBag->incrementCryptoBalance($tx->ticker, $tx->amount, $tx);
 
-                if (DateHelper::getYearFromDate($tx->date) === $this->fiscalYear) {
+                if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
                     if ($tx->earningCategory) {
                         $this->earningsBag->addEarning($tx->exchange, $tx->earningCategory, EarningsBag::NR, $tx->value);
                     } else {
@@ -126,7 +120,7 @@ class Report
             } elseif ($tx->type === Transaction::SALE || $tx->type === Transaction::EXPENSE) {
                 $this->cryptoInfoBag->decrementCryptoBalance($tx->ticker, $tx->amount, $tx);
 
-                if (DateHelper::getYearFromDate($tx->date) === $this->fiscalYear) {
+                if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
                     $this->earningsBag->addEarning($tx->exchange, EarningsBag::CAPITAL_GAINS, null, $tx->getCapitalGain());
 
                     if ($tx->type === Transaction::SALE) {
@@ -143,7 +137,7 @@ class Report
                              // this is just the profit realized by selling a crypto earning, it doesn't include capital gain
                             $realizedProfit = $purchaseTx->value / $purchaseTx->amount * $purchase['amount'];
 
-                            if (DateHelper::getYearFromDate($purchaseTx->date) === $this->fiscalYear) {
+                            if (DateUtils::getYearFromDate($purchaseTx->date) === $this->fiscalYear) {
                                 $type = EarningsBag::RAC;
                             } else {
                                 $type = EarningsBag::RAP;
@@ -160,8 +154,17 @@ class Report
             }
         }
 
-        $this->cryptoInfoBag->setBalancesUntilDay(DateHelper::old_getNumerOfDaysInYear($this->fiscalYear) + 1);
+        $this->cryptoInfoBag->setBalancesUntilDay(DateUtils::old_getNumerOfDaysInYear($this->fiscalYear) + 1);
         $this->cryptoInfoBag->sortByAverageValue();
+    }
+
+    /**
+     * Get the current selected fiscal year.
+     *
+     * @return integer
+     */
+    public function getCurrentYear() {
+        return $this->fiscalYear;
     }
 
     /**
@@ -176,7 +179,7 @@ class Report
             return null;
         }
 
-        return DateHelper::getYearFromDate($firstTransaction->date);
+        return DateUtils::getYearFromDate($firstTransaction->date);
     }
 
     /**
@@ -190,7 +193,7 @@ class Report
             return null;
         }
 
-        return DateHelper::getCurrentYear();
+        return DateUtils::getCurrentYear();
     }
 
     /**
@@ -203,10 +206,10 @@ class Report
     public function get51kThresholdExceeded() {
         $dailyValues = $this->cryptoInfoBag->getDailyValuesStartOfYear();
         $daysOverThreshold = 0;
-        $holidays = DateHelper::getHolidays($this->fiscalYear);
+        $holidays = DateUtils::getHolidays($this->fiscalYear);
 
-        for ($i = 0; $i <= DateHelper::old_getNumerOfDaysInYear($this->fiscalYear); $i++) {
-            if (DateHelper::getDayOfWeek($i, $this->fiscalYear) > 0 && !in_array($i, $holidays)) {
+        for ($i = 0; $i <= DateUtils::old_getNumerOfDaysInYear($this->fiscalYear); $i++) {
+            if (DateUtils::getDayOfWeek($i, $this->fiscalYear) > 0 && !in_array($i, $holidays)) {
                 if ($dailyValues[$i] > self::CAPITAL_GAINS_NO_TAX_AREA_THRESHOLD) {
                     $daysOverThreshold++;
                 } else {
@@ -283,7 +286,7 @@ class Report
      * @return boolean
      */
     public function shouldFillRT() {
-        return $this->getCapitalGains() !== 0.0;
+        return $this->get51kThresholdExceeded() && $this->getCapitalGains() !== 0.0;
     }
 
     /**
@@ -301,7 +304,7 @@ class Report
      * @return array
      */
     public function getSummary($rawValues = false) {
-        return $this->recursiveFormatNumbers([
+        return NumberUtils::recursiveFormatNumbers([
             'current_year_investment' => $this->currentYearInvestment,
             'current_year_purchase_cost' => $this->currentYearPurchaseCost,
             'current_year_income' => $this->currentYearIncome,
@@ -312,7 +315,7 @@ class Report
             'interests_tax' => $this->earningsBag->getInterests() * self::INTERESTS_EARNING_TAX_RATE,
             'total_values' => $this->cryptoInfoBag->getTotalValues()
         ], 2, false, $rawValues) + [
-            'no_tax_area_threshold_exceeded' => $this->get51kThresholdExceeded() || true,
+            'no_tax_area_threshold_exceeded' => $this->get51kThresholdExceeded(),
         ];
     }
 
@@ -327,11 +330,11 @@ class Report
             'summary' => $this->getSummary(),
             'crypto_info' => $this->cryptoInfoBag->getInfoForRender(),
             'earnings_categories' => $this->earningsBag->getCategoriesForRender(),
-            'days_list' => DateHelper::getListDaysInYear($this->fiscalYear)
-        ] + $this->recursiveFormatNumbers([
+            'days_list' => DateUtils::getListDaysInYear($this->fiscalYear)
+        ] + NumberUtils::recursiveFormatNumbers([
             'earnings' => $this->earningsBag->getInfoForRender(),
             'detailed_earnings' => $this->earningsBag->getDetailedInfoForRender(),
-        ]) + $this->recursiveFormatNumbers([
+        ]) + NumberUtils::recursiveFormatNumbers([
             'daily_values_start_of_year' => $this->cryptoInfoBag->getDailyValuesStartOfYear(),
             'daily_values_end_of_year' => $this->cryptoInfoBag->getDailyValuesEndOfYear(),
             'daily_values_real' => $this->cryptoInfoBag->getDailyValues(),
@@ -339,6 +342,11 @@ class Report
         ], 2, true);
     }
 
+    /**
+     * Get the info for generate the "Modello Redditi" form.
+     *
+     * @return array
+     */
     public function getInfoForModelloRedditi() {
         return [
             'fiscal_year' => $this->fiscalYear,
@@ -350,6 +358,11 @@ class Report
         ];
     }
 
+    /**
+     * Get the info for generate the "Modello Redditi" section RW form.
+     *
+     * @return array
+     */
     public function getModelloRedditiSectionRwInfo() {
         return [
             'initial_value' => (
@@ -379,28 +392,6 @@ class Report
         $this->currentYearPurchaseCost = 0.0;
         $this->currentYearIncome = 0.0;
         $this->exchangeVolumes = [];
-    }
-
-    /**
-     * Round and format all numbers in in array, recursively.
-     *
-     * @param array $array
-     * @param integer $digits
-     * @return array
-     */
-    private function recursiveFormatNumbers($array, $digits = 2, $roundOnly = false, $pass = false) {
-        if ($pass) {
-            return $array;
-        }
-
-        foreach ($array AS $key => $value) {
-            if (is_array($value)) {
-                $array[$key] = $this->recursiveFormatNumbers($value, $digits, $roundOnly);
-            } else {
-                $array[$key] = $roundOnly ? round($value, $digits) : number_format($value, $digits, ',', '.');
-            }
-        }
-        return $array;
     }
 
     /**
