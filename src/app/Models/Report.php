@@ -338,7 +338,8 @@ class Report
             'interests_rl_raw' => $this->earningsBag->getInterests(EarningsBag::INTEREST_RL),
             'no_tax_area_threshold_exceeded' => $this->get51kThresholdExceeded(),
             'should_fill_modello_redditi' => $this->shouldFillRL() || $this->shouldFillRW() || $this->shouldFillRT() || $this->shouldFillRM(),
-            'modello_redditi_available' => TemplatesManager::isTemplateAvailable($this->getCurrentYear())
+            'modello_redditi_available' => TemplatesManager::isTemplateAvailable($this->getCurrentYear()),
+            'interest_exchanges' => $this->earningsBag->getExchangeInterestList()
         ];
     }
 

@@ -26,15 +26,19 @@ class WebAppController
         switch ($action) {
             case self::ACTION_REPORT:
                 self::printReport();
+                break;
             case self::ACTION_PDF_MODELLO_REDDITI:
                 self::printModelloRedditi();
+                break;
             case self::ACTION_PDF_MODELLO_F24:
                 self::printModelloF24();
+                break;
             case self::ACTION_UPLOAD:
                 self::upload();
                 break;
             case self::ACTION_SET_SETTINGS:
                 self::setSettings();
+                break;
             default:
                 self::printReport();
                 // throw new ActionInvalidException($action);
@@ -103,13 +107,12 @@ class WebAppController
     }
 
     public static function setSettings() {
-        $reportId = $_POST['report_id'];
-
-        if (strlen($reportId) !== 32) {
-            throw new NotFoundException('report');
-        }
-
+        $reportId = self::getSelectedReportId();
         $settings = self::getSelectedReportSettings();
+
+        if ($settings === null) {
+            $settings = [];
+        }
 
         if (isset($_POST['exchanges'])) {
             $settings['exchanges'] = json_decode($_POST['exchanges']);
@@ -123,7 +126,7 @@ class WebAppController
     }
 
     private static function getSelectedReportContent() {
-        $reportId = $_GET['id'];
+        $reportId = self::getSelectedReportId();
         $filePath = dirname(__FILE__) . '/../../tmp/' . $reportId;
 
         if (strlen($reportId) !== 32 || !file_exists($filePath)) {
@@ -135,7 +138,7 @@ class WebAppController
     }
 
     private static function getSelectedReportSettings() {
-        $reportId = $_GET['id'] ?? $_POST['id'] ?? null;
+        $reportId = self::getSelectedReportId();
 
         $filePath = dirname(__FILE__) . '/../../tmp/' . $reportId;
 
@@ -144,6 +147,10 @@ class WebAppController
         }
 
         return json_decode(base64_decode($_COOKIE['SETTINGS-' . $reportId] ?? ''));
+    }
+
+    private static function getSelectedReportId() {
+        return $_GET['id'] ?? $_POST['id'] ?? null;
     }
 
     private static function getCookieOptions() {

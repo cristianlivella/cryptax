@@ -23,17 +23,24 @@ class ReportWrapper
         }
 
         $reportSummaries = [];
+        $exchangeInterestList = [];
+        $yearsList = [];
 
         for ($year = $this->report->getFirstYear(); $year <= $this->report->getLastYear(); $year++) {
             $this->report->elaborateReport($year);
             $summary = $this->report->getSummary(true);
 
             if ($summary['total_values']['average_value'] > 0.01) {
-                $reportSummaries[$year] = $summary;
+                $reportSummaries['years'][$year] = $summary;
             }
+
+            $exchangeInterestList = array_merge($exchangeInterestList, $reportSummaries['years'][$year]['interest_exchanges']);
+            $yearsList[] = $year;
         }
 
         $reportSummaries = $this->calculateCapitalLossesCompensation($reportSummaries);
+        $reportSummaries['interest_exchanges'] = $exchangeInterestList;
+        $reportSummaries['years_list'] = $yearsList;
 
         $this->report->elaborateReport($currentYear);
 
@@ -65,10 +72,6 @@ class ReportWrapper
         }
 
         $years = array_keys($this->getSummary());
-
-        // The last key is "total_compensation", not a year.
-        // Not very nice, to be fixed in the future.
-        unset($years[count($years) - 1]);
 
         $yearSelectors = [];
 
@@ -158,16 +161,16 @@ class ReportWrapper
             'total_costs' => round($this->report->currentYearPurchaseCost),
             'capital_gains' => $capitalGains > 0 ? $capitalGains : '',
             'capital_losses' => $capitalGains < 0 ? abs($capitalGains) : '',
-            'capital_losses_previous_years' => max(0, $capitalGains - $summary[$year]['capital_gains_compensated']),
-            'capital_gains_compensated' => round($summary[$year]['capital_gains_compensated']),
-            'capital_gains_compensated_tax' => max(0, round(round($summary[$year]['capital_gains_compensated']) * Report::CAPITAL_GAINS_TAX_RATE)),
+            'capital_losses_previous_years' => max(0, $capitalGains - $summary['years'][$year]['capital_gains_compensated']),
+            'capital_gains_compensated' => round($summary['years'][$year]['capital_gains_compensated']),
+            'capital_gains_compensated_tax' => max(0, round(round($summary['years'][$year]['capital_gains_compensated']) * Report::CAPITAL_GAINS_TAX_RATE)),
             'capital_gains_tax' => max(0, round($capitalGains * Report::CAPITAL_GAINS_TAX_RATE)),
             'compensate_capital_losses' => $compensateCapitalLosses,
             'remaining_capital_losses' => []
         ];
 
         for ($i = 4; $i >= 0; $i--) {
-            $info['remaining_capital_losses'][$year - $i] = $summary[$year - $i]['remaining_capital_losses'][$year] ?? 0;
+            $info['remaining_capital_losses'][$year - $i] = $summary['years'][$year - $i]['remaining_capital_losses'][$year] ?? 0;
         }
 
         return $info;
@@ -194,7 +197,7 @@ class ReportWrapper
     private function calculateCapitalLossesCompensation($summaries) {
         $totalCompensation = 0;
 
-        foreach ($summaries AS $year => &$summary) {
+        foreach ($summaries['years'] AS $year => &$summary) {
             $summary['remaining_capital_losses'][$year] = 0;
             $summary['capital_gains_compensated'] = 0;
 
@@ -213,16 +216,16 @@ class ReportWrapper
 
             // check if we can compensate capital gains with capital losses of the previous 4 years
             for ($i = 4; $i > 0; $i--) {
-                if ($summary['capital_gains_compensated'] > 0 && ($summaries[$year - $i]['remaining_capital_losses'][$year - 1] ?? 0) > 0) {
+                if ($summary['capital_gains_compensated'] > 0 && ($summaries['years'][$year - $i]['remaining_capital_losses'][$year - 1] ?? 0) > 0) {
                     // if in the year [$year - 1] there are remaining capital losses, we reduce the capital gains of this year
-                    $compensation = min($summary['capital_gains_compensated'], $summaries[$year - $i]['remaining_capital_losses'][$year]);
+                    $compensation = min($summary['capital_gains_compensated'], $summaries['years'][$year - $i]['remaining_capital_losses'][$year]);
                     $summary['capital_gains_compensated'] -= $compensation;
-                    $summaries[$year - $i]['remaining_capital_losses'][$year] -= $compensation;
+                    $summaries['years'][$year - $i]['remaining_capital_losses'][$year] -= $compensation;
                     $totalCompensation += $compensation;
 
                     // update the remaining capital losses for any following years
                     for ($j = $year; $j <= $year - $i + 4; $j++) {
-                        $summaries[$year - $i]['remaining_capital_losses'][$j] = $summaries[$year - $i]['remaining_capital_losses'][$year];
+                        $summaries['years'][$year - $i]['remaining_capital_losses'][$j] = $summaries['years'][$year - $i]['remaining_capital_losses'][$year];
                     }
                 }
             }

@@ -201,15 +201,28 @@ class EarningsBag
 
         unset($detailedEarnings[self::CAPITAL_GAINS]);
 
-        foreach ($detailedEarnings AS $category => $exchanges) {
-            foreach (array_keys($exchanges) AS $exchange) {
-                if (!isset($exchangeInterestTypes[$exchange])) {
-                    $exchangeInterestTypes[$exchange] = $this->getExchangeInterestType($exchange);
-                }
+        foreach (array_keys($detailedEarnings[Transaction::INTEREST] ?? []) AS $exchange) {
+            if (!isset($exchangeInterestTypes[$exchange])) {
+                $exchangeInterestTypes[$exchange] = $this->getExchangeInterestType($exchange);
             }
         }
 
         return $exchangeInterestTypes;
+    }
+
+    public function getExchangeInterestList() {
+        $exchanges = [];
+        $exchangesCleaned = [];
+
+        foreach (array_keys($this->getExchangeInterestTypes()) AS $exchange) {
+            $exchangeCleaned = strtolower(str_replace(' ', '', $exchange));
+            if (!in_array($exchangeCleaned, $exchangesCleaned)) {
+                $exchanges[] = $exchange;
+                $exchangesCleaned[] = $exchangeCleaned;
+            }
+        }
+
+        return $exchanges;
     }
 
     private function getExchangeInterestType($exchange) {
