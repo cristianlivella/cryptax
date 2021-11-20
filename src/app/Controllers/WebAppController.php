@@ -83,7 +83,7 @@ class WebAppController
             throw new InvalidFileException();
         }
 
-        if ($file['size'] > 1 * 1024 * 1024) {
+        if ($file['size'] > 25 * 1024 * 1024) {
             throw new FileTooBigException();
         }
 
