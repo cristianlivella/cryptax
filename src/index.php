@@ -8,7 +8,7 @@ use CrypTax\Controllers\WebAppController;
 use CrypTax\Exceptions\BaseException;
 use CrypTax\Exceptions\InvalidTransactionException;
 
-header('Access-Control-Allow-Origin: http://localhost:3000 https://app.cryptax.xyz');
+header('Access-Control-Allow-Origin: https://app.cryptax.xyz');
 header('Access-Control-Allow-Headers: Content-Type, Cookies');
 header('Access-Control-Allow-Credentials: true');
 
