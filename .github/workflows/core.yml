@@ -29,10 +29,9 @@ jobs:
       run: echo "UPDATE_COMPOSER=${{ contains(steps.changed-files.outputs.modified_files, 'composer.json') || contains(steps.changed-files.outputs.modified_files, 'composer.lock') }}" >> $GITHUB_ENV
     - name: Build composer
       if: ${{ env.UPDATE_COMPOSER == 'true' }}
-      uses: php-actions/composer@v5
+      uses: "ramsey/composer-install@v1"
       with:
-          php_version: 7.4
-          working_dir: src/
+        composer-options: "--ignore-platform-reqs --working-dir=src/ --no-interaction"
     - name: Save version
       run: ./get-version.sh
       working-directory: src/
