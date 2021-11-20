@@ -115,11 +115,11 @@ class WebAppController
         }
 
         if (isset($_POST['exchanges'])) {
-            $settings['exchanges'] = json_decode($_POST['exchanges']);
+            $settings['exchanges'] = json_decode($_POST['exchanges'], true);
         }
 
         if (isset($_POST['compensate_losses'])) {
-            $settings['exchanges'] = filter_var($_POST['compensate_losses'] ?? true, FILTER_VALIDATE_BOOLEAN);
+            $settings['compensate_losses'] = filter_var($_POST['compensate_losses'] ?? true, FILTER_VALIDATE_BOOLEAN);
         }
 
         setcookie('SETTINGS-' . $reportId, base64_encode(json_encode($settings)), self::getCookieOptions());
@@ -146,7 +146,7 @@ class WebAppController
             throw new NotFoundException('report');
         }
 
-        return json_decode(base64_decode($_COOKIE['SETTINGS-' . $reportId] ?? ''));
+        return json_decode(base64_decode($_COOKIE['SETTINGS-' . $reportId] ?? ''), true);
     }
 
     private static function getSelectedReportId() {

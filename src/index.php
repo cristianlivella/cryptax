@@ -8,6 +8,15 @@ use CrypTax\Controllers\WebAppController;
 use CrypTax\Exceptions\BaseException;
 use CrypTax\Exceptions\InvalidTransactionException;
 
+header('Access-Control-Allow-Origin: http://localhost:3000 https://app.cryptax.xyz');
+header('Access-Control-Allow-Headers: Content-Type, Cookies');
+header('Access-Control-Allow-Credentials: true');
+
+$data = json_decode(file_get_contents("php://input"), true);
+if (is_array($data)) {
+    $_POST = $_POST + $data;
+}
+
 set_time_limit(0);
 
 try {
