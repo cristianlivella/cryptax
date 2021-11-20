@@ -1,0 +1,47 @@
+name: CrypTax core
+
+on:
+  push:
+    branches: [ master ]
+  release:
+    types: [ published ]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Public IP
+      id: ip
+      uses: haythem/public-ip@v1.2
+    - name: Get latest code
+      uses: actions/checkout@v2.3.2
+      with:
+          fetch-depth: 0
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v5.1
+    - name: Turnstyle
+      uses: softprops/turnstyle@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Set UPDATE_COMPOSER
+      run: echo "UPDATE_COMPOSER=${{ contains(steps.changed-files.outputs.modified_files, 'composer.json') || contains(steps.changed-files.outputs.modified_files, 'composer.lock') }}" >> $GITHUB_ENV
+    - name: Build composer
+      if: ${{ env.UPDATE_COMPOSER == 'true' }}
+      uses: php-actions/composer@v5
+      with:
+          php_version: 7.4
+          working_dir: src/
+    - name: Save version
+      run: ./get-version.sh
+      working-directory: src/
+    - name: FTP publish
+      uses: sebastianpopp/ftp-action@releases/v2
+      with:
+        host: ${{ secrets.FTP_HOST }}
+        user: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        remoteDir: ${{ secrets.FTP_DIR }}
+        localDir: src/
+        options: "-v --delete -x ^config.php ${{ (env.UPDATE_COMPOSER == 'false') && '-x ^vendor/' || '' }}"
