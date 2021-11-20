@@ -2,6 +2,10 @@
     size: auto;
 }
 
+body {
+    margin: 8px;
+}
+
 th {
     vertical-align: middle !important;
     text-align: center;
@@ -9,6 +13,10 @@ th {
 
 .price {
     text-align: right;
+}
+
+.section {
+    text-align: center;
 }
 
 .unit {
@@ -22,7 +30,25 @@ th {
     margin-bottom: 24px;
 }
 
+.selectors {
+    flex-grow: 1;
+    text-align: right;
+    padding: 14px;
+}
+
+.document_selectors > * {
+    margin-left: 8px;
+}
+
+a.selected {
+    font-weight: bold;
+}
+
 @media print {
+    body {
+        margin: 0px;
+    }
+
     .pagebreak {
         clear: both;
         page-break-after: always;
@@ -34,6 +60,10 @@ th {
 
     .leftColumn {
         width: 55% !important;
+    }
+
+    .selectors {
+        display: none;
     }
 
     canvas {

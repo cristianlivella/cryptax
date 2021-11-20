@@ -12,4 +12,6 @@ const CUSTOM_TICKERS = [
     'MY_TICKER' => 'CRYPTOHISTORY_TICKER'
 ];
 
+const MODE = 'private';
+
 date_default_timezone_set('Europe/Rome');

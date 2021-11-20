@@ -1,0 +1,22 @@
+{
+    "name": "cristianlivella/cryptax",
+    "description": "Software for calculating cryptocurrency capital gains for tax purposes. Calculation with LIFO method, generation of pre-filled tax forms, made in Italy for Italy.",
+    "type": "project",
+    "license": "GPL-3.0-only",
+    "authors": [
+        {
+            "name": "Cristian Livella",
+            "email": "cristian@cristianlivella.com"
+        }
+    ],
+    "require": {
+        "twig/twig": "^3.3",
+        "setasign/fpdf": "^1.8",
+        "setasign/fpdi": "^2.3"
+    },
+    "autoload": {
+       "psr-4": {
+           "CrypTax\\": "app/"
+       }
+   }
+}
