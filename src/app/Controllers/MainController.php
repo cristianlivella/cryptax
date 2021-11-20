@@ -8,6 +8,8 @@ use CrypTax\Models\ReportWrapper;
 
 use Exception;
 
+use CrypTax\Utils\CryptoInfoUtils;
+
 class MainController
 {
     const ACTION_PDF_MODELLO_REDDITI = 'pdf_modello_redditi';

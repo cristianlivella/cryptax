@@ -46,7 +46,7 @@ class CryptoInfo
     /**
      * Balance of each day in the fiscal year.
      *
-     * @var integer
+     * @var integer[]
      */
     private $dailyBalances = [];
 
@@ -112,6 +112,10 @@ class CryptoInfo
      * @return float
      */
     public function getPriceStartOfYear() {
+        if (array_sum($this->dailyBalances) === 0.0) {
+            return 0.0;
+        }
+
         return CryptoInfoUtils::getCryptoPrice($this->ticker, DateUtils::getFirstDayOfYear($this->fiscalYear));
     }
 
@@ -122,6 +126,11 @@ class CryptoInfo
      */
     public function getPriceEndOfYear() {
         $this->setBalancesUntilDay(DateUtils::old_getNumerOfDaysInYear($this->fiscalYear) + 1);
+
+        if (array_sum($this->dailyBalances) === 0.0) {
+            return 0.0;
+        }
+
         return CryptoInfoUtils::getCryptoPrice($this->ticker, DateUtils::getLastDayOfYear($this->fiscalYear));
     }
 
@@ -151,6 +160,11 @@ class CryptoInfo
      */
     public function getAverageValue($priceDate = '12-31') {
         $dailyBalancesSum = array_sum($this->dailyBalances);
+
+        if ($dailyBalancesSum === 0.0) {
+            return 0.0;
+        }
+
         $daysInYear = DateUtils::getNumberOfDaysInYear($this->fiscalYear);
         $price = CryptoInfoUtils::getCryptoPrice($this->ticker, $this->fiscalYear . '-' . $priceDate);
 
@@ -164,6 +178,10 @@ class CryptoInfo
      * @return [type]            [description]
      */
     public function getMaxValue($priceDate = '12-31') {
+        if (array_sum($this->dailyBalances) === 0.0) {
+            return 0.0;
+        }
+        
         $price = CryptoInfoUtils::getCryptoPrice($this->ticker, $this->fiscalYear . '-' . $priceDate);
 
         return max($this->dailyBalances) * $price;
@@ -195,6 +213,10 @@ class CryptoInfo
      * @return float[]
      */
     public function getDailyValues($priceDate = null) {
+        if (array_sum($this->dailyBalances) === 0.0) {
+            return $this->dailyBalances;
+        }
+
         return array_map(function ($balance, $day) use ($priceDate) {
             if ($priceDate === null) {
                 $dateToFetch = DateUtils::getDateFromDayOfYear($day, $this->fiscalYear);

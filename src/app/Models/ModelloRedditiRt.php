@@ -2,65 +2,34 @@
 
 namespace CrypTax\Models;
 
+use CrypTax\ModelloRedditiTemplates\TemplatesManager;
+
 abstract class ModelloRedditiRt
 {
     public static function fill($pdf, $info, $fiscalYear) {
-        $countPages = $pdf->setSourceFile(dirname(__FILE__) . '/../../resources/pdf/PF-RT.pdf');
+        $template = TemplatesManager::getTemplate($fiscalYear, TemplatesManager::TYPE_RT);
 
-        for ($page = 1; $page <= $countPages; $page++) {
-            $templateId = $pdf->importPage($page);
+        $template->setValue('totale_corrispettivi', $info['rt']['total_incomes']);
+        $template->setValue('totale_costi_acquisto', $info['rt']['total_costs']);
+        $template->setValue('minusvalenze', $info['rt']['capital_losses']);
+        $template->setValue('plusvalenze', $info['rt']['capital_gains']);
 
-            $pdf->addPage();
-            $pdf->useTemplate($templateId);
-            $pdf->addHeaderFooter($fiscalYear, $page === 1);
+        if ($info['rt']['compensate_capital_losses']) {
+            $template->setValue('minusvalenze_anni_precedenti', $info['rt']['capital_losses_previous_years']);
+            $template->setValue('eccedenze_minusvalenze', $info['rt']['capital_losses_previous_years']);
+            $template->setValue('differenza_plus_minus', $info['rt']['capital_gains_compensated']);
+            $template->setValue('imposta_sostitutiva', $info['rt']['capital_gains_compensated_tax']);
+            $template->setValue('imposta_sostitutiva_dovuta', $info['rt']['capital_gains_compensated_tax']);
 
-            if ($page === 1) {
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetFont('Courier', 'B', 10);
-
-                // RT21 - Totale dei corrispettivi
-                $pdf->writeRTL(192, 91.2, $info['rt']['total_incomes']);
-
-                // RT22 - Totale dei costi o dei valori di acquisto
-                $pdf->writeRTL(192, 95.4, $info['rt']['total_costs']);
-
-                // RT23.1 - Minusvalenze
-                $pdf->writeRTL(118.4, 99.6, $info['rt']['capital_losses']);
-
-                // RT23.3 - Plusvalenze
-                $pdf->writeRTL(192, 99.6, $info['rt']['capital_gains']);
-
-                if ($info['rt']['compensate_capital_losses']) {
-                    // RT24.1 - Eccedenza minusvalenze anni precedenti
-                    $pdf->writeRTL(98.4, 103.8, $info['rt']['capital_losses_previous_years']);
-
-                    // RT24.4 - Eccedenza minusvalenze
-                    $pdf->writeRTL(192, 103.8, $info['rt']['capital_losses_previous_years']);
-
-                    // RT26 - Differenza
-                    $pdf->writeRTL(192, 112.2, $info['rt']['capital_gains_compensated']);
-
-                    // RT27 - Imposta sostitutiva
-                    $pdf->writeRTL(192, 116.4, $info['rt']['capital_gains_compensated_tax']);
-
-                    // RT29 - Imposta sostitutiva dovuta
-                    $pdf->writeRTL(192, 124.8, $info['rt']['capital_gains_compensated_tax']);
-
-                    // RT93 - Minusvalenze non compensate nell'anno
-                    for ($i = 4; $i >= 0; $i--) {
-                        $pdf->writeRTL(192 - $i * 27.8, 218, $info['rt']['remaining_capital_losses'][$fiscalYear - $i] ?? 0);
-                    }
-                } else {
-                    // RT26 - Differenza
-                    $pdf->writeRTL(192, 112.2, $info['rt']['capital_gains']);
-
-                    // RT27 - Imposta sostitutiva
-                    $pdf->writeRTL(192, 116.4, $info['rt']['capital_gains_tax']);
-
-                    // RT29 - Imposta sostitutiva dovuta
-                    $pdf->writeRTL(192, 124.8, $info['rt']['capital_gains_tax']);
-                }
+            for ($i = 4; $i >= 0; $i--) {
+                $template->setValue('minusvalenze_anno_' . $i, $info['rt']['remaining_capital_losses'][$fiscalYear - $i] ?? 0);
             }
+        } else {
+            $template->setValue('differenza_plus_minus', $info['rt']['capital_gains']);
+            $template->setValue('imposta_sostitutiva', $info['rt']['capital_gains_tax']);
+            $template->setValue('imposta_sostitutiva_dovuta', $info['rt']['capital_gains_tax']);
         }
+
+        $template->writeOnPdf($pdf);
     }
 }

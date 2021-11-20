@@ -15,32 +15,34 @@
                 <h4>Report criptovalute anno {{ fiscal_year }}</h4>
             </div>
 
-            <div class="selectors">
-                <div>
-                    {% for year, link in years %}
-                        <a href="{{ link }}" class="{{ year is same as(fiscal_year) ? 'selected' : ''}}">{{ year }}</a>
-                    {% endfor %}
-                </div>
+            {% if mode_private %}
+                <div class="selectors">
+                    <div>
+                        {% for year, link in years %}
+                            <a href="{{ link }}" class="{{ year is same as(fiscal_year) ? 'selected' : ''}}">{{ year }}</a>
+                        {% endfor %}
+                    </div>
 
-                <div class="document_selectors">
-                    {% for form, link in forms %}
-                        <a href="{{ link }}" target="_blank">{{ form_names[form] }}</a>
-                    {% endfor %}
+                    <div class="document_selectors">
+                        {% for form, link in forms %}
+                            <a href="{{ link }}" target="_blank">{{ form_names[form] }}</a>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
 
         <table class='table table-bordered table-sm'>
             <tr>
                 <th colspan='2'>Criptovaluta</th>
-                <th colspan='2'>Prezzo 01/01/{{ fiscal_year }} <sub>1)</sub></th>
-                <th colspan='2'>Prezzo 31/12/{{ fiscal_year }} <sub>2)</sub></th>
+                <th colspan='2'>Prezzo 01/01/{{ fiscal_year }}</th>
+                <th colspan='2'>Prezzo 31/12/{{ fiscal_year }}</th>
                 <th colspan='2'>Saldo 01/01/{{ fiscal_year }}</th>
                 <th colspan='2'>Controvalore 01/01/{{ fiscal_year }}</th>
                 <th colspan='2'>Saldo 31/12/{{ fiscal_year }}</th>
                 <th colspan='2'>Controvalore 31/12/{{ fiscal_year }}</th>
-                <th colspan='2'>Giacenza media <sub>3)</sub></th>
-                <th colspan='2'>Valore massimo <sub>3)</sub></th>
+                <th colspan='2'>Giacenza media <sub>1)</sub></th>
+                <th colspan='2'>Valore massimo <sub>1)</sub></th>
             </tr>
 
             {% for crypto in crypto_info %}
@@ -93,10 +95,10 @@
                 <tr>
                     <th colspan='1' rowspan='2'>Tipologia</th>
                     <th colspan='4'>Realizzati </th>
-                    <th colspan='2' rowspan='2'>Non realizzati <sub>6)</sub></th>
+                    <th colspan='2' rowspan='2'>Non realizzati <sub>4)</sub></th>
                 </tr>
                 <tr>
-                    <th colspan='2'>anni precedenti <sub>5)</sub></th>
+                    <th colspan='2'>anni precedenti <sub>3)</sub></th>
                     <th colspan='2'>anno corrente</th>
                 </tr>
                 <tr>
@@ -122,15 +124,19 @@
             {% for category, exchanges in detailed_earnings %}
                 <table class='table table-bordered table-sm' style="max-width: 620px; margin: 0 auto; margin-top: 16px;">
                     <tr>
-                        <th colspan='8'>Dettaglio {{ earnings_categories[category] }}</th>
+                        <th colspan='9'>Dettaglio {{ earnings_categories[category] }}</th>
                     </tr>
                     <tr>
                         <th colspan='1' rowspan='2'>Provenienza</th>
                         <th colspan='4'>Realizzati </th>
-                        <th colspan='2' rowspan='2'>Non realizzati <sub>6)</sub></th>
+                        <th colspan='2' rowspan='2'>Non realizzati <sub>4)</sub></th>
+
+                        {% if category is same as('interest') %}
+                            <th rowspan='2'>Quadro</th>
+                        {% endif %}
                     </tr>
                     <tr>
-                        <th colspan='2'>anni precedenti <sub>5)</sub></th>
+                        <th colspan='2'>anni precedenti <sub>3)</sub></th>
                         <th colspan='2'>anno corrente</th>
                     </tr>
 
@@ -143,6 +149,10 @@
                             <td class='unit'>€</td>
                             <td class='price'>{{ values['nr'] }}</td>
                             <td class='unit'>€</td>
+
+                            {% if category is same as('interest') %}
+                                <td class='section'>{{ exchange_interest_types[exchange] }}</td>
+                            {% endif %}
                         </tr>
                     {% endfor %}
                 </table>
@@ -152,7 +162,7 @@
         <div class="column rightColumn">
             <table class="table table-bordered table-sm" style="max-width: 460px; margin: 0 auto;">
                 <tr>
-                    <th style="text-align: left">Investimenti anno corrente <sub>4)</sub></th>
+                    <th style="text-align: left">Investimenti anno corrente <sub>2)</sub></th>
                     <td class='price'>{{ summary['current_year_investment'] }}</td>
                     <td class='unit'>€</td>
                 </tr>
@@ -175,7 +185,7 @@
                     <td class='unit'>€</td>
                 </tr>
                 <tr>
-                    <th style="text-align: left">Plusvalenze + airdrop <sub>RT23</sub> <sub>7)</sub></th>
+                    <th style="text-align: left">Plusvalenze + airdrop <sub>RT23</sub> <sub>5)</sub></th>
                     <td class='price'>{{ summary['capital_gains_and_airdrop'] }}</td>
                     <td class='unit'>€</td>
                 </tr>
@@ -190,18 +200,38 @@
                 </tr>
                 <tr><th colspan="3"></th></tr>
                 <tr>
-                    <th style="text-align: left">Redditi di capitale <sub>RM12.3</sub> <sub>8)</sub></th>
-                    <td class='price'>{{ summary['interests'] }}</td>
+                    <th colspan="3">Quadro RM</th>
+                </tr>
+                <tr>
+                    <th style="text-align: left">Redditi di capitale <sub>RM12.3</sub></th>
+                    <td class='price'>{{ summary['interests_rm'] }}</td>
                     <td class='unit'>€</td>
                 </tr>
                 <tr>
                     <th style="text-align: left">Imposta sostitutiva <sub>RM12.6</sub></th>
-                    <td class='price'>{{ summary['interests_tax'] }}</td>
+                    <td class='price'>{{ summary['interests_rm_tax'] }}</td>
                     <td class='unit'>€</td>
                 </tr>
+                <tr><th colspan="3"></th></tr>
+                <tr>
+                    <th colspan="3">Quadro RL</th>
+                </tr>
+                <tr>
+                    <th style="text-align: left">Altri redditi di capitale <sub>RL2.2</sub></th>
+                    <td class='price'>{{ summary['interests_rl'] }}</td>
+                    <td class='unit'>€</td>
+                </tr>
+                {% for rate in [23, 27, 38, 41, 43] %}
+                    <tr>
+                        <th style="text-align: left">Imposta stimata <small>(con aliquota marginale {{ rate }}%)</small></th>
+                        <td class='price'>{{ (summary['interests_rl_raw'] | round * rate / 100) | round | number_format(2, ',', '.') }}</td>
+                        <td class='unit'>€</td>
+                    </tr>
+                {% endfor %}
+
             </table>
 
-            <div class="chart" style="width: 99%; height: 400px; margin-top: 30px;">
+            <div class="chart" style="width: 99%; height: 400px; margin-top: 12px;">
                 <canvas id="chart2" width="100%" height="100%"></canvas>
             </div>
         </div>
@@ -212,31 +242,55 @@
             <canvas id="chart1" width="100%" height="100%"></canvas>
         </div>
 
-        <p>
-            1) fonte: cryptohistory.one<br />
-            nei casi dove non è disponibile il prezzo al giorno 01/01/{{ fiscal_year }} è indicato il primo prezzo disponibile nell'anno {{ fiscal_year }}
-        </p>
-        <p>
-            2) fonte: cryptohistory.one
-        </p>
-        <p>
-            3) calcolato secondo il prezzo al giorno 31/12/{{ fiscal_year }}
-        </p>
-        <p>
-            4) somma dei costi d'acquisto - somma dei corrispettivi di cessione
-        </p>
-        <p>
-            5) guadagni percepiti negli anni precedenti, ma venduti ovvero scambiati con un'altra criptovaluta nell'anno corrente
-        </p>
-        <p>
-            6) guadagni percepiti nell'anno corrente che non sono ancora stati venduti ovvero scambiati con un'altra criptovaluta
-        </p>
-        <p>
-            7) somma delle plusvalenze e degli airdrop ricevuti nell'anno corrente, realizzati e non realizzati
-        </p>
-        <p>
-            8) interessi ricevuti nell'anno corrente, realizzati e non realizzati
-        </p>
+        {% if warnings['show'] %}
+        <div class="alert alert-warning" role="alert">
+            <b>Attenzione!</b> Il report potrebbe essere incompleto o incorretto per i seguenti motivi:
+            <ul style="margin: 0">
+                {% if warnings['too_early'] %}
+                    <li>
+                        i prezzi prima del giorno {{ warnings['too_early_date'] | date('d/m/Y') }} non sono disponibili
+                    </li>
+                {% endif %}
+                {% if warnings['too_late'] %}
+                    <li>
+                        i prezzi dopo il giorno {{ warnings['too_late_date'] | date('d/m/Y') }} non sono ancora disponibili
+                    </li>
+                {% endif %}
+                {% if warnings['prices'] | length > 0 %}
+                    <li>i prezzi per le seguenti criptovalute non sono disponibili:
+                    <ul style="margin: 0">
+                        {% for price in warnings['prices'] %}
+                            <li>
+                                <b>{{ price['ticker'] }}</b>, dal giorno {{ price['from'] | date('d/m/Y') }} al giorno {{ price['to'] | date('d/m/Y') }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+        <small>
+            <p>
+                Fonte prezzi: cryptohistory.one. Nel caso non sia disponibile il prezzo al giorno 01/01/{{ fiscal_year }} viene utilizzato il primo prezzo  disponibile nell'anno {{ fiscal_year }}. <br/>
+            </p>
+
+            <p>
+                1) calcolato secondo il prezzo al giorno 31/12/{{ fiscal_year }};
+                2) somma dei costi d'acquisto - somma dei corrispettivi di cessione;
+                3) guadagni percepiti negli anni precedenti, ma venduti ovvero scambiati con un'altra criptovaluta nell'anno corrente;
+                4) guadagni percepiti nell'anno corrente che non sono ancora stati venduti ovvero scambiati con un'altra criptovaluta;
+                5) somma delle plusvalenze e degli airdrop ricevuti nell'anno corrente, realizzati e non realizzati.
+            </p>
+
+            <p>Generato da CrypTax - {{ software_version }} - github.com/cristianlivella/cryptax - in data {{ date }} alle ore {{ time }}.</p>
+
+            <p>
+                ATTENZIONE: CrypTax e Cristian Livella non si assumono nessuna responsabilita riguardo la correttezza
+                e la completezza dei dati riportati in questo modulo. Il software offre un aiuto nel calcolo
+                delle plusvalenze e nella compilazione dei modelli, ma è responsabilità del contribuente di verificarne
+                la correttezza e la compatibilità con la propria situazione finanziaria complessiva.
+            </p>
+        </small>
 
         <script>
             const fiscalYear = {{ fiscal_year }};

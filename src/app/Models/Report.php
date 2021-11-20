@@ -3,6 +3,8 @@
 namespace CrypTax\Models;
 
 use CrypTax\Exceptions\InvalidYearException;
+use CrypTax\ModelloRedditiTemplates\TemplatesManager;
+
 use CrypTax\Models\Transaction;
 use CrypTax\Models\TransactionsBag;
 use CrypTax\Utils\DateUtils;
@@ -65,14 +67,22 @@ class Report
     private array $exchangeVolumes = [];
 
     /**
+     * Interest type for each exchange/service (RL o RM)
+     *
+     * @var array
+     */
+    private array $exchangeInterestTypes = [];
+
+    /**
      * Selected fiscal year.
      *
      * @var integer|null
      */
     private ?int $fiscalYear = null;
 
-    public function __construct($transactionsFileContent) {
+    public function __construct($transactionsFileContent, $exchangeInterestTypes = []) {
         $this->transactionsBag = new TransactionsBag($transactionsFileContent);
+        $this->exchangeInterestTypes = $exchangeInterestTypes;
     }
 
     /**
@@ -258,8 +268,8 @@ class Report
         return $this->getCapitalGains() * self::CAPITAL_GAINS_TAX_RATE;
     }
 
-    public function getInterests() {
-        return $this->earningsBag->getInterests();
+    public function getInterests($type = EarningsBag::INTEREST_RL) {
+        return $this->earningsBag->getInterests($type);
     }
 
     /**
@@ -290,12 +300,21 @@ class Report
     }
 
     /**
-     * Filling the RM section is required if you have earned interests.
+     * Filling the RM section is required if you have earned RM-like interests.
      *
      * @return boolean
      */
     public function shouldFillRM() {
-        return $this->earningsBag->getInterests() > 0.0;
+        return $this->getInterests(EarningsBag::INTEREST_RM) > 0.0;
+    }
+
+    /**
+     * Filling the RL section is required if you have earned RL-like interests.
+     *
+     * @return boolean
+     */
+    public function shouldFillRL() {
+        return $this->getInterests(EarningsBag::INTEREST_RL) > 0.0;
     }
 
     /**
@@ -311,11 +330,15 @@ class Report
             'capital_gains' => $this->getCapitalGains(true),
             'capital_gains_and_airdrop' => $this->getCapitalGains(),
             'capital_gains_tax' => $this->getCapitalGainsTax(),
-            'interests' => $this->earningsBag->getInterests(),
-            'interests_tax' => $this->earningsBag->getInterests() * self::INTERESTS_EARNING_TAX_RATE,
+            'interests_rm' => $this->earningsBag->getInterests(EarningsBag::INTEREST_RM),
+            'interests_rm_tax' => $this->earningsBag->getInterests(EarningsBag::INTEREST_RM) * self::INTERESTS_EARNING_TAX_RATE,
+            'interests_rl' => $this->earningsBag->getInterests(EarningsBag::INTEREST_RL),
             'total_values' => $this->cryptoInfoBag->getTotalValues()
         ], 2, false, $rawValues) + [
+            'interests_rl_raw' => $this->earningsBag->getInterests(EarningsBag::INTEREST_RL),
             'no_tax_area_threshold_exceeded' => $this->get51kThresholdExceeded(),
+            'should_fill_modello_redditi' => $this->shouldFillRL() || $this->shouldFillRW() || $this->shouldFillRT() || $this->shouldFillRM(),
+            'modello_redditi_available' => TemplatesManager::isTemplateAvailable($this->getCurrentYear())
         ];
     }
 
@@ -330,7 +353,8 @@ class Report
             'summary' => $this->getSummary(),
             'crypto_info' => $this->cryptoInfoBag->getInfoForRender(),
             'earnings_categories' => $this->earningsBag->getCategoriesForRender(),
-            'days_list' => DateUtils::getListDaysInYear($this->fiscalYear)
+            'days_list' => DateUtils::getListDaysInYear($this->fiscalYear),
+            'exchange_interest_types' => $this->earningsBag->getExchangeInterestTypes()
         ] + NumberUtils::recursiveFormatNumbers([
             'earnings' => $this->earningsBag->getInfoForRender(),
             'detailed_earnings' => $this->earningsBag->getDetailedInfoForRender(),
@@ -351,6 +375,7 @@ class Report
         return [
             'fiscal_year' => $this->fiscalYear,
             'sections_required' => [
+                'rl' => $this->shouldFillRL(),
                 'rw' => $this->shouldFillRW(),
                 'rt' => $this->shouldFillRT(),
                 'rm' => $this->shouldFillRM()
@@ -387,7 +412,7 @@ class Report
         }
 
         $this->cryptoInfoBag = new CryptoInfoBag($this->transactionsBag->transactions, $this->fiscalYear);
-        $this->earningsBag = new EarningsBag();
+        $this->earningsBag = new EarningsBag($this->exchangeInterestTypes);
         $this->currentYearInvestment = 0.0;
         $this->currentYearPurchaseCost = 0.0;
         $this->currentYearIncome = 0.0;

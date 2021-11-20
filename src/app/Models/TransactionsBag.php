@@ -2,6 +2,8 @@
 
 namespace CrypTax\Models;
 
+use CrypTax\Exceptions\CannotFindPurchasesException;
+
 class TransactionsBag
 {
     /**

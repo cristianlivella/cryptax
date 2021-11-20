@@ -2,18 +2,25 @@
 
 namespace CrypTax\Models;
 
+use CrypTax\Utils\DateUtils;
 use CrypTax\Utils\NumberUtils;
+use CrypTax\Utils\VersionUtils;
+use CrypTax\Utils\CryptoInfoUtils;
 
 class ReportWrapper
 {
     private Report $report;
 
-    public function __construct($transactionsFileContent) {
-        $this->report = new Report($transactionsFileContent);
+    public function __construct($transactionsFileContent, $exchangeInterestTypes = []) {
+        $this->report = new Report($transactionsFileContent, $exchangeInterestTypes);
     }
 
-    public function getSummary() {
+    public function getSummary($rawValues = false) {
         $currentYear = $this->report->getCurrentYear();
+
+        if (!$currentYear) {
+            $currentYear = DateUtils::getCurrentYear();
+        }
 
         $reportSummaries = [];
 
@@ -30,7 +37,11 @@ class ReportWrapper
 
         $this->report->elaborateReport($currentYear);
 
-        return NumberUtils::recursiveFormatNumbers($reportSummaries, 0, true);
+        if ($rawValues) {
+            return $reportSummaries;
+        } else {
+            return NumberUtils::recursiveFormatNumbers($reportSummaries, 0, true);
+        }
     }
 
     public function elaborateReport($year) {
@@ -83,21 +94,27 @@ class ReportWrapper
             ]);
         }
 
-        return $twig->render('report.html', [
+        return $twig->render('report.html', $this->report->getInfoForRender() + [
             'header' => HEADER,
             'years' => $yearSelectors,
             'forms' => $forms,
             'form_names' => [
                 'pf' => 'Redditi Persone Fisiche ' . ($year + 1),
                 'f24' => 'Modello di pagamento F24'
-            ]
-        ] + $this->report->getInfoForRender());
+            ],
+            'software_version' => VersionUtils::getVersion(),
+            'date' => date('d/m/Y'),
+            'time' => date('H:i:s'),
+            'warnings' => CryptoInfoUtils::getWarnings(intval($year)),
+            'mode_private' => !defined('MODE') || MODE === 'private'
+        ]);
     }
 
     public function getModelloRedditi($year, $compensateCapitalLosses = true) {
         $this->elaborateReport($year);
 
         $info = $this->report->getInfoForModelloRedditi() + [
+            'rl' => $this->getSectionRlInfo($year),
             'rw' => $this->report->getModelloRedditiSectionRwInfo(),
             'rt' => $this->getSectionRtInfo($year, $compensateCapitalLosses),
             'rm' => $this->getSectionRmInfo($year)
@@ -156,13 +173,21 @@ class ReportWrapper
         return $info;
     }
 
+    public function getSectionRlInfo($year) {
+        $this->elaborateReport($year);
+
+        return [
+            'interests' => round($this->report->getInterests(EarningsBag::INTEREST_RL))
+        ];
+    }
+
     public function getSectionRmInfo($year) {
         $this->elaborateReport($year);
 
         return [
-            'interests' => round($this->report->getInterests()),
+            'interests' => round($this->report->getInterests(EarningsBag::INTEREST_RM)),
             'tax_rate' => round(Report::INTERESTS_EARNING_TAX_RATE * 100),
-            'tax' => round(round($this->report->getInterests()) * Report::INTERESTS_EARNING_TAX_RATE)
+            'tax' => round(round($this->report->getInterests(EarningsBag::INTEREST_RM)) * Report::INTERESTS_EARNING_TAX_RATE)
         ];
     }
 
@@ -173,8 +198,9 @@ class ReportWrapper
             $summary['remaining_capital_losses'][$year] = 0;
             $summary['capital_gains_compensated'] = 0;
 
-            if (!$summary['no_tax_area_threshold_exceeded']) {
-                // do nothing if the no tax zone threshold has not been exceeded in this year
+            if (!$summary['no_tax_area_threshold_exceeded'] || $year < 2016) {
+                // do nothing if the no-tax area threshold has not been exceeded in this year or if fiscal year is before 2016
+                // TODO: controllare se $year < 2016 porta al comportamento corretto
                 continue;
             }
 
@@ -211,6 +237,4 @@ class ReportWrapper
 
         return $summaries;
     }
-
-
 }

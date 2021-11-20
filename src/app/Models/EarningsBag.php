@@ -9,6 +9,9 @@ class EarningsBag
     const RAC = 'rac';
     const NR = 'nr';
 
+    const INTEREST_RM = 'RM';
+    const INTEREST_RL = 'RL';
+
     const TYPES = [self::RAP, self::RAC, self::NR];
 
     /**
@@ -18,13 +21,17 @@ class EarningsBag
      */
     private $earnings;
 
+    private $interestTypes = [];
+
     /**
      * Initialize the earnings array.
      */
-    public function __construct() {
+    public function __construct($exchangeInterestTypes) {
         $this->earnings = [
             'capital_gains' => 0.0
         ];
+
+        $this->interestTypes = $exchangeInterestTypes;
     }
 
     /**
@@ -67,8 +74,8 @@ class EarningsBag
      *
      * @return float
      */
-    public function getInterests() {
-        return $this->getCategoryTotalValue(Transaction::INTEREST);
+    public function getInterests($type = self::INTEREST_RL) {
+        return $this->getCategoryTotalValue(Transaction::INTEREST, $type);
     }
 
     /**
@@ -113,14 +120,18 @@ class EarningsBag
      * @param string $category
      * @return float
      */
-    private function getCategoryTotalValue($category) {
+    private function getCategoryTotalValue($category, $interestType = self::INTEREST_RL) {
         $totalValue = 0.0;
 
         if (!isset($this->earnings[$category])) {
             return $totalValue;
         }
 
-        foreach ($this->earnings[$category] AS $exchanges => $types) {
+        foreach ($this->earnings[$category] AS $exchange => $types) {
+            if ($category === Transaction::INTEREST && $this->getExchangeInterestType($exchange) !== $interestType) {
+                continue;
+            }
+
             foreach ($types AS $type => $value) {
                 $totalValue += $value;
             }
@@ -182,5 +193,38 @@ class EarningsBag
         ksort($detailedEarnings);
 
         return $detailedEarnings;
+    }
+
+    public function getExchangeInterestTypes() {
+        $exchangeInterestTypes = [];
+        $detailedEarnings = $this->earnings;
+
+        unset($detailedEarnings[self::CAPITAL_GAINS]);
+
+        foreach ($detailedEarnings AS $category => $exchanges) {
+            foreach (array_keys($exchanges) AS $exchange) {
+                if (!isset($exchangeInterestTypes[$exchange])) {
+                    $exchangeInterestTypes[$exchange] = $this->getExchangeInterestType($exchange);
+                }
+            }
+        }
+
+        return $exchangeInterestTypes;
+    }
+
+    private function getExchangeInterestType($exchange) {
+        $exchange = array_filter(array_keys($this->interestTypes), function ($currExchange) use ($exchange) {
+            return strtolower(str_replace(' ', '', $currExchange)) === strtolower(str_replace(' ', '', $exchange));
+        });
+
+        $exchange = array_values($exchange);
+
+        if (isset($exchange[0])) {
+            $exchange = $exchange[0];
+        } else {
+            return self::INTEREST_RL;
+        }
+
+        return strtoupper($this->interestTypes[$exchange] ?? '') === self::INTEREST_RM ? self::INTEREST_RM : self::INTEREST_RL;
     }
 }

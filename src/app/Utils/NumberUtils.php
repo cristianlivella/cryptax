@@ -25,6 +25,7 @@ class NumberUtils
                 $array[$key] = $roundOnly ? round($value, $digits) : number_format($value, $digits, ',', '.');
             }
         }
+        
         return $array;
     }
 }

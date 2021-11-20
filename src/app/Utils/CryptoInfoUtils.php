@@ -11,38 +11,159 @@ class CryptoInfoUtils
      */
     private const API_HOST = 'https://cryptohistory.one/api';
 
+    /**
+     * Array cache with all requested cryptocurrency prices.
+     *
+     * @var array
+     */
     private static $prices = [];
 
+    /**
+     * Set to true if trying to get too early cryptocurrency prices.
+     *
+     * @var boolean
+     */
+    private static $requestedTooEarlyPrices = false;
+
+    /**
+     * Set to true if trying to get too late cryptocurrency prices.
+     *
+     * @var boolean
+     */
+    private static $requestedTooLatePrices = false;
+
+    /**
+     * Get the crypto name by the ticker.
+     *
+     * @param string $ticker
+     * @return string
+     */
     public static function getCryptoName($ticker) {
         return self::getCryptoData($ticker, DateUtils::getToday())['name'];
     }
 
+    /**
+     * Get the crypto real ticker by the user input ticker.
+     * This mainly fixes the letters capitalization.
+     *
+     * @param string $ticker
+     * @return string
+     */
     public static function getCryptoTicker($ticker) {
         return self::getCryptoData($ticker, DateUtils::getToday())['ticker'];
     }
 
+    /**
+     * Get a cryptocurrency price.
+     *
+     * @param string $ticker
+     * @param string $date
+     * @return float
+     */
     public static function getCryptoPrice($ticker, $date) {
-        //var_dump(debug_backtrace()[1]['function']);
         return self::getCryptoData($ticker, $date)['price'];
     }
 
+    /**
+     * Get a cryptocurrency price at the beginning of the year.
+     *
+     * @param string $ticker
+     * @param integer $year
+     * @return float
+     */
     public static function getCryptoPriceStartOfYear($ticker, $year) {
         return self::getCryptoPrice($ticker, $year . '-01-01');
     }
 
+    /**
+     * Get a cryptocurrency price at the end of the year.
+     *
+     * @param string $ticker
+     * @param integer $year
+     * @return float
+     */
     public static function getCryptoPriceEndOfYear($ticker, $year) {
         return self::getCryptoPrice($ticker, $year . '-12-31');
     }
 
+    public static function getWarnings($year = null) {
+        $warnings = [
+            'too_early' => ($year === null || $year < 2009) ? self::$requestedTooEarlyPrices : false,
+            'too_early_date' => DateUtils::getDateFromString('2009-01-03'),
+            'too_late' => ($year === null || $year === DateUtils::getCurrentYear()) ? self::$requestedTooLatePrices : false,
+            'too_late_date' => DateUtils::getDateFromString('-3 days'),
+            'prices' => self::getNotFoundPrices($year)
+        ];
+
+        $warnings['show'] = $warnings['too_early'] || $warnings['too_late'] || count($warnings['prices']) > 0;
+
+        return $warnings;
+    }
+
+    private static function getNotFoundPrices($year = null) {
+        $notFoundPrices = [];
+
+        foreach (self::$prices AS $ticker => $dates) {
+            $firstDate = null;
+            $lastDate = null;
+
+            ksort($dates);
+            foreach ($dates AS $date => $value) {
+                if ($year !== null && $year !== intval(date('Y', strtotime($date)))) {
+                    continue;
+                }
+
+                if (!$value['found']) {
+                    if ($value['required']) {
+                        if ($firstDate === null) {
+                            $firstDate = $date;
+                            $lastDate = $date;
+                        } else {
+                            $lastDate = $date;
+                        }
+                    }
+                } else {
+                    if ($firstDate !== null) {
+                        $notFoundPrices[] = ['ticker' => $ticker, 'from' => $firstDate, 'to' => $lastDate];
+                    }
+                    $firstDate = null;
+                    $lastDate = null;
+                }
+            }
+
+            if ($firstDate !== null) {
+                $notFoundPrices[] = ['ticker' => $ticker, 'from' => $firstDate, 'to' => $lastDate];
+            }
+            $firstDate = null;
+            $lastDate = null;
+        }
+
+        return $notFoundPrices;
+    }
+
+    /**
+     * Get a cryptocurrency info and price on a specific date.
+     *
+     * @param string $ticker
+     * @param string $date
+     * @return array
+     */
     private static function getCryptoData($ticker, $date) {
-        //var_dump([$ticker, $date]);
         $date = DateUtils::getDateFromString($date);
 
         if (isset(CUSTOM_TICKERS[$ticker])) {
             $ticker = CUSTOM_TICKERS[$ticker];
         }
 
+        // prices before the creation of Bitcoin do not exist
+        if ($date < DateUtils::getDateFromString('2009-01-03')) {
+            self::$requestedTooEarlyPrices = true;
+            return self::getCryptoData($ticker, DateUtils::getDateFromString('2009-01-03'));
+        }
+
+        // prices of the last 3 days may not yet be available
         if ($date > DateUtils::getDateFromString('-3 days')) {
+            self::$requestedTooLatePrices = true;
             return self::getCryptoData($ticker, DateUtils::getDateFromString('-3 days'));
         }
 
@@ -53,6 +174,7 @@ class CryptoInfoUtils
                 'name' => $ticker,
                 'ticker' => $ticker,
                 'price' => 0.0,
+                'required' => true,
                 'found' => false,
                 'fetched' => false
             ];
@@ -60,16 +182,32 @@ class CryptoInfoUtils
             self::fetchCryptoData($ticker, $date);
         }
 
-        self::$prices[$ticker][$date]['reqired'] = true;
+        self::$prices[$ticker][$date]['required'] = true;
 
         return self::$prices[$ticker][$date];
     }
 
+    /**
+     * Fetch cryptocurrency data from database cache and API.
+     *
+     * @param string $ticker
+     * @param string $date
+     * @return void
+     */
     private static function fetchCryptoData($ticker, $date) {
         self::fetchCryptoDataFromDb($ticker, $date);
         self::fetchCryptoDataFromApi($ticker, $date);
     }
 
+    /**
+     * To reduce number of DB/API calls, each time a predefined length range of dates is requested.
+     * This method calculates the first and the last date of the range.
+     *
+     * @param string $ticker
+     * @param string $date
+     * @param integer $rangeDays
+     * @return array
+     */
     private static function getDateRangeToFetch($ticker, $date, $rangeDays = 366) {
         $firstDate = DateUtils::getDateFromString($date . ' - ' . (intval($rangeDays / 2)) . ' days');
         $lastDate = DateUtils::getDateFromString($date . ' + ' . (intval($rangeDays / 2)) . ' days');
@@ -93,6 +231,13 @@ class CryptoInfoUtils
         return [$firstDate, $lastDate];
     }
 
+    /**
+     * Fetch cryptocurrency data from database cache.
+     *
+     * @param string $ticker
+     * @param string $date
+     * @return void
+     */
     private static function fetchCryptoDataFromDb($ticker, $date) {
         [$firstDate, $lastDate] = self::getDateRangeToFetch($ticker, $date);
 
@@ -122,6 +267,13 @@ class CryptoInfoUtils
         }
     }
 
+    /**
+     * Fetch cryptocurrency data from cryptohistory.one API.
+     *
+     * @param string $ticker
+     * @param string $date
+     * @return void
+     */
     private static function fetchCryptoDataFromApi($ticker, $date) {
         [$firstDate, $lastDate] = self::getDateRangeToFetch($ticker, $date);
 

@@ -9,6 +9,9 @@ class DbUtils
     private static $instance;
     private $connection;
 
+    /**
+     * Create the connection and the missing DB tables.
+     */
     private function __construct() {
         $this->connection = mysqli_connect(DB_HOST, DB_USER, DB_PSW, DB_NAME);
 
@@ -21,16 +24,21 @@ class DbUtils
 
         $tableExists = $this->connection->query('SELECT 1 FROM cache LIMIT 1');
         if (!$tableExists) {
-            $this->connection->multi_query(file_get_contents(__DIR__ . '../../resources/dump.sql'));
+            $this->connection->multi_query(file_get_contents(__DIR__ . '/../../resources/dump.sql'));
             while ($this->connection->next_result());
         }
     }
 
+    /**
+     * Get the connection istance.
+     *
+     * @return MySQLi
+     */
     public static function getConnection() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
 
         return self::$instance->connection;
-  }
+    }
 }

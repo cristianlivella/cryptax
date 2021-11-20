@@ -136,6 +136,8 @@ class Transaction
     }
 
     private function setAmount($amount) {
+        $amount = str_replace(',', '.', $amount);
+
         if (is_numeric($amount)) {
             $this->amount = floatval($amount);
         } else {
@@ -144,6 +146,8 @@ class Transaction
     }
 
     private function setValue($value) {
+        $value = str_replace(',', '.', $value);
+
         if (is_numeric($value) && floatval($value) > 0) {
             $this->value = floatval($value);
         } elseif ((is_numeric($value) && floatval($value) === 0.0 ) || trim($value) === '') {
