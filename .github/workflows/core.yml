@@ -43,4 +43,4 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         remoteDir: ${{ secrets.FTP_DIR }}
         localDir: src/
-        options: "-v --delete -x ^config.php ${{ (env.UPDATE_COMPOSER == 'false') && '-x ^vendor/' || '' }}"
+        options: "-v --delete -x ^config.php ^tmp/ ${{ (env.UPDATE_COMPOSER == 'false') && '-x ^vendor/' || '' }}"
