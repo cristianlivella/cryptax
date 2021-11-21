@@ -164,6 +164,7 @@ class Report
             }
         }
 
+        $this->cryptoInfoBag->saveStartOfYearSnapshot();
         $this->cryptoInfoBag->setBalancesUntilDay(DateUtils::old_getNumerOfDaysInYear($this->fiscalYear) + 1);
         $this->cryptoInfoBag->sortByAverageValue();
     }

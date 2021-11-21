@@ -100,49 +100,51 @@ const config1 = {
 
 const chart1 = new Chart(ctx1, config1);
 
-const ctx2 = document.getElementById('chart2').getContext('2d');
+if (document.getElementById('chart2')) {
+    const ctx2 = document.getElementById('chart2').getContext('2d');
 
-const config2 = {
-    type: 'doughnut',
-    data: {
-        labels: exchanges,
-        datasets: [{
-            data: exchangeVolumes,
-            borderColor: generateColors(exchanges.length).reverse(),
-            backgroundColor: generateColors(exchanges.length).reverse(),
-            fill: true,
-            yAxisID: 'y-axis-1',
-        }
-    ]
-    },
-    options: {
-        scales: {
-            yAxes: [],
+    const config2 = {
+        type: 'doughnut',
+        data: {
+            labels: exchanges,
+            datasets: [{
+                data: exchangeVolumes,
+                borderColor: generateColors(exchanges.length).reverse(),
+                backgroundColor: generateColors(exchanges.length).reverse(),
+                fill: true,
+                yAxisID: 'y-axis-1',
+            }
+        ]
         },
-        responsive:true,
-        maintainAspectRatio: false,
-        title: {
-            display: true,
-            fontSize: 18,
-            fontColor: '#212529',
-            text: 'Volumi exchange'
-        },
-        tooltips: {
-            callbacks: {
-                label: function(tooltipItem, data) {
-                    return data.labels[tooltipItem.index] + ': €' + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                },
+        options: {
+            scales: {
+                yAxes: [],
             },
-            mode: 'index',
-            intersect: false,
-            position: 'nearest',
-        },
-        elements: {
-            point:{
-                radius: 0
+            responsive:true,
+            maintainAspectRatio: false,
+            title: {
+                display: true,
+                fontSize: 18,
+                fontColor: '#212529',
+                text: 'Volumi exchange'
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        return data.labels[tooltipItem.index] + ': €' + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                    },
+                },
+                mode: 'index',
+                intersect: false,
+                position: 'nearest',
+            },
+            elements: {
+                point:{
+                    radius: 0
+                }
             }
         }
-    }
-};
+    };
 
-const chart2 = new Chart(ctx2, config2);
+    const chart2 = new Chart(ctx2, config2);
+}

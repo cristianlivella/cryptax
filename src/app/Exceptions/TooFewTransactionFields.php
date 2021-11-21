@@ -4,7 +4,7 @@ namespace CrypTax\Exceptions;
 
 class TooFewTransactionFields extends BaseException
 {
-    const EXPECTED_FIELDS = 7;
+    const EXPECTED_FIELDS = 5;
     private $transactionId;
     private $fieldsCount;
 

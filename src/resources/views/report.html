@@ -142,7 +142,7 @@
 
                     {% for exchange, values in exchanges %}
                         <tr>
-                            <td>{{ exchange }}</td>
+                            <td>{{ exchange is same as ('') ? 'n.d.' : exchange }}</td>
                             <td class='price'>{{ values['rap'] }}</td>
                             <td class='unit'>€</td>
                             <td class='price'>{{ values['rac'] }}</td>
@@ -231,9 +231,11 @@
 
             </table>
 
+            {% if exchange_volumes|length > 0 %}
             <div class="chart" style="width: 99%; height: 400px; margin-top: 12px;">
                 <canvas id="chart2" width="100%" height="100%"></canvas>
             </div>
+            {% endif %}
         </div>
 
         <div style="float: none; clear: both" />

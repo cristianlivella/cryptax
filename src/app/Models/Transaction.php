@@ -49,7 +49,7 @@ class Transaction
     public function __construct($id, $rawTx) {
         $this->id = $id;
 
-        if (count($rawTx) < 7) {
+        if (count($rawTx) < 5) {
             throw new TooFewTransactionFields($this->id, count($rawTx));
         }
 
@@ -58,8 +58,8 @@ class Transaction
         $this->setTicker($rawTx[4]);
         $this->setAmount($rawTx[3]);
         $this->setValue($rawTx[2]);
-        $this->setExchange($rawTx[5]);
-        $this->setEarningCategory($rawTx[6]);
+        $this->setExchange($rawTx[5] ?? '');
+        $this->setEarningCategory($rawTx[6] ?? '');
     }
 
     public function getPurchaseAmountRemaining() {
@@ -147,6 +147,7 @@ class Transaction
 
     private function setValue($value) {
         $value = str_replace(',', '.', $value);
+        $value = str_replace(['€', '$', ' '], '', $value);
 
         if (is_numeric($value) && floatval($value) > 0) {
             $this->value = floatval($value);

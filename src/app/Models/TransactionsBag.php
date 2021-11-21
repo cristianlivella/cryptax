@@ -2,6 +2,7 @@
 
 namespace CrypTax\Models;
 
+use CrypTax\Exceptions\InvalidFileException;
 use CrypTax\Exceptions\CannotFindPurchasesException;
 
 class TransactionsBag
@@ -22,13 +23,32 @@ class TransactionsBag
     private $cryptoPurchases = [];
 
     public function __construct($transactionsFileContent) {
-        // explode CSV file content
-        $rawTransactions = explode(PHP_EOL, $transactionsFileContent);
-        unset($rawTransactions[count($rawTransactions) - 1]);
+        // create a temporary file, needed for PhpSpreadsheet
+        $tmpFile = tmpfile();
+        fwrite($tmpFile, $transactionsFileContent);
+        $filePath = stream_get_meta_data($tmpFile)['uri'];
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+            $rawTransactions = $spreadsheet->getSheet(0)->toArray();
+
+            $dateFormat1 = '/[0-9]{1,2}\/[0-9]{1,2}\/[0-9]{4}/';
+            $dateFormat2 = '/[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}/';
+
+            $firstTxDate = $rawTransactions[0][0] ?? false;
+            if ($firstTxDate !== false && !preg_match($dateFormat1, $firstTxDate) && !preg_match($dateFormat2, $firstTxDate)) {
+                // if the date of the first row is invalid, assume it's a header row and ignore it
+                unset($rawTransactions[0]);
+            }
+
+            unlink($filePath);
+        } catch (Throwable $e) {
+            unlink($filePath);
+            throw new InvalidFileException();
+        }
 
         // parse the transactions
         foreach ($rawTransactions AS $id => $rawTx) {
-            $rawTx = explode(';', $rawTx);
             $this->transactions[$id + 1] = new Transaction($id + 1, $rawTx);
         }
 

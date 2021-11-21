@@ -71,7 +71,7 @@ class ReportWrapper
             $baseUrl = substr($baseUrl, 0, strrpos($baseUrl, '?'));
         }
 
-        $years = array_keys($this->getSummary());
+        $years = array_keys($this->getSummary()['years']);
 
         $yearSelectors = [];
 

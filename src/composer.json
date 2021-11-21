@@ -12,7 +12,8 @@
     "require": {
         "twig/twig": "^3.3",
         "setasign/fpdf": "^1.8",
-        "setasign/fpdi": "^2.3"
+        "setasign/fpdi": "^2.3",
+        "phpoffice/phpspreadsheet": "^1.19"
     },
     "autoload": {
        "psr-4": {
