@@ -1,10 +1,10 @@
 <?php
-use CrypTax\Utils\DbUtils;
-use CrypTax\Utils\CryptoInfoUtils;
-
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/vendor/autoload.php';
+
+use CrypTax\Utils\CryptoInfoUtils;
+use CrypTax\Utils\DbUtils;
 
 if (PHP_SAPI !== 'cli' || isset($_SERVER['HTTP_USER_AGENT'])) {
     die();
