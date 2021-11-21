@@ -246,7 +246,7 @@ class CryptoInfoUtils
             return;
         }
 
-        $currentTime = time();
+        $currentTime = defined('FAKE_CACHE_EXPIRATION') ? (time() + (60 * 60)) : time();
         $stmt = DbUtils::getConnection()->prepare('SELECT date, quote, ticker, name, found FROM cache WHERE ticker = ? AND date >= ? AND date <= ? AND (expiration = 0 OR expiration > ?)');
         $stmt->bind_param('sssi', $ticker, $firstDate, $lastDate, $currentTime);
         $stmt->execute();
@@ -315,7 +315,7 @@ class CryptoInfoUtils
             foreach ($values AS $value) {
                 $price = floatVal($value['price_eur']);
                 $found = $value['found'] ? 1 : 0;
-                $expiration = time() + $value['cache_max_age'];
+                $expiration = time() + ($value['found'] ? $value['cache_max_age'] : min($value['cache_max_age'], 60 * 60 * 24 * 30));
                 $stmt = DbUtils::getConnection()->prepare('INSERT INTO cache (ticker, name, date, quote, expiration, found) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?, found = ?');
                 $stmt->bind_param('sssdiidii', $value['ticker'], $value['name'], $value['date'], $price, $expiration, $found, $price, $expiration, $found);
                 $stmt->execute();
