@@ -315,7 +315,7 @@ class CryptoInfoUtils
             foreach ($values AS $value) {
                 $price = floatVal($value['price_eur']);
                 $found = $value['found'] ? 1 : 0;
-                $expiration = time() + ($value['found'] ? $value['cache_max_age'] : min($value['cache_max_age'], 60 * 60 * 24 * 30));
+                $expiration = ($value['found'] ? 0 : time() + min($value['cache_max_age'], 60 * 60 * 24 * 30));
                 $stmt = DbUtils::getConnection()->prepare('INSERT INTO cache (ticker, name, date, quote, expiration, found) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE quote = ?, expiration = ?, found = ?');
                 $stmt->bind_param('sssdiidii', $value['ticker'], $value['name'], $value['date'], $price, $expiration, $found, $price, $expiration, $found);
                 $stmt->execute();
