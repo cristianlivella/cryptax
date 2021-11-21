@@ -48,6 +48,7 @@ class TransactionsBag
         }
 
         // parse the transactions
+        $rawTransactions = array_values($rawTransactions);
         foreach ($rawTransactions AS $id => $rawTx) {
             $this->transactions[$id + 1] = new Transaction($id + 1, $rawTx);
         }
