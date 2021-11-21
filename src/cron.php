@@ -25,7 +25,7 @@ foreach (new DirectoryIterator(dirname(__FILE__) . '/tmp') AS $fileInfo) {
 define('FAKE_CACHE_EXPIRATION', true);
 
 $expirationTime = time() + (60 * 60);
-$stmt = DbUtils::getConnection()->prepare('SELECT date, ticker FROM cache WHERE expiration < ?');
+$stmt = DbUtils::getConnection()->prepare('SELECT date, ticker FROM cache WHERE expiration > 0 AND expiration < ?');
 $stmt->bind_param('i', $expirationTime);
 $stmt->execute();
 $result = $stmt->get_result();
