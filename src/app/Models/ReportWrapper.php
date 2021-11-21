@@ -32,10 +32,10 @@ class ReportWrapper
 
             if ($summary['total_values']['average_value'] > 0.01) {
                 $reportSummaries['years'][$year] = $summary;
-            }
 
-            $exchangeInterestList = array_merge($exchangeInterestList, $reportSummaries['years'][$year]['interest_exchanges']);
-            $yearsList[] = $year;
+                $exchangeInterestList = array_merge($exchangeInterestList, $reportSummaries['years'][$year]['interest_exchanges']);
+                $yearsList[] = $year;
+            }
         }
 
         $reportSummaries = $this->calculateCapitalLossesCompensation($reportSummaries);
