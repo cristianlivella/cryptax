@@ -22,6 +22,11 @@ class Transaction
         self::EXPENSE => 'spesa'
     ];
 
+    const TYPES_ALT = [
+        self::PURCHASE => 'buy',
+        self::SALE => 'sell'
+    ];
+
     const CAPITAL_GAINS = 'capital_gains';
     const AIRDROP = 'airdrop';
     const INTEREST = 'interest';
@@ -122,12 +127,17 @@ class Transaction
             $this->type = array_search($this->type, self::TYPES_IT);
         }
 
+        if (in_array($this->type, self::TYPES_ALT)) {
+            $this->type = array_search($this->type, self::TYPES_ALT);
+        }
+
         if (!in_array($this->type, self::TYPES)) {
             throw new InvalidTransactionException($this->id, 'type', $type);
         }
     }
 
     private function setTicker($ticker) {
+        $ticker = preg_replace('/\([^)]+\)/', '', $ticker);
         $this->ticker = CryptoInfoUtils::getCryptoTicker(trim($ticker));
 
         if ($this->ticker === '') {
