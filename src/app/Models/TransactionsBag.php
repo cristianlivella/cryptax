@@ -42,7 +42,7 @@ class TransactionsBag
             }
 
             unlink($filePath);
-        } catch (Throwable $e) {
+        } catch (\Exception $e) {
             unlink($filePath);
             throw new InvalidFileException();
         }
