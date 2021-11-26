@@ -5,6 +5,8 @@ namespace CrypTax\Utils;
 use DateTime;
 
 class DateUtils {
+    private static $dateFromStringCache = [];
+
     /**
      * Get date in Y-m-d format from string.
      *
@@ -12,7 +14,11 @@ class DateUtils {
      * @return string
      */
     public static function getDateFromString($string) {
-        return date('Y-m-d', strtotime($string));
+        if (!isset(self::$dateFromStringCache[$string])) {
+            self::$dateFromStringCache[$string] = date('Y-m-d', strtotime($string));
+        }
+
+        return self::$dateFromStringCache[$string];
     }
 
     /**

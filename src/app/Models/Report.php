@@ -215,25 +215,27 @@ class Report
      * @return boolean
      */
     public function get51kThresholdExceeded() {
-        $dailyValues = $this->cryptoInfoBag->getDailyValuesStartOfYear();
-        $daysOverThreshold = 0;
-        $holidays = DateUtils::getHolidays($this->fiscalYear);
+        return once(function () {
+            $dailyValues = $this->cryptoInfoBag->getDailyValuesStartOfYear();
+            $daysOverThreshold = 0;
+            $holidays = DateUtils::getHolidays($this->fiscalYear);
 
-        for ($i = 0; $i <= DateUtils::old_getNumerOfDaysInYear($this->fiscalYear); $i++) {
-            if (DateUtils::getDayOfWeek($i, $this->fiscalYear) > 0 && !in_array($i, $holidays)) {
-                if ($dailyValues[$i] > self::CAPITAL_GAINS_NO_TAX_AREA_THRESHOLD) {
-                    $daysOverThreshold++;
-                } else {
-                    $daysOverThreshold = 0;
-                }
+            for ($i = 0; $i <= DateUtils::old_getNumerOfDaysInYear($this->fiscalYear); $i++) {
+                if (DateUtils::getDayOfWeek($i, $this->fiscalYear) > 0 && !in_array($i, $holidays)) {
+                    if ($dailyValues[$i] > self::CAPITAL_GAINS_NO_TAX_AREA_THRESHOLD) {
+                        $daysOverThreshold++;
+                    } else {
+                        $daysOverThreshold = 0;
+                    }
 
-                if ($daysOverThreshold === 7) {
-                    return true;
+                    if ($daysOverThreshold === 7) {
+                        return true;
+                    }
                 }
             }
-        }
 
-        return false;
+            return false;
+        });
     }
 
     /**
@@ -420,6 +422,8 @@ class Report
         $this->currentYearPurchaseCost = 0.0;
         $this->currentYearIncome = 0.0;
         $this->exchangeVolumes = [];
+
+        \Spatie\Once\Cache::flush();
     }
 
     /**

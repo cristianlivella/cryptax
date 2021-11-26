@@ -23,6 +23,13 @@ class CryptoInfoBag
     private $startOfYearDataInitialized = false;
 
     /**
+     * Day of the fiscal year up to where the processing was done, 0-365.
+     *
+     * @var integer
+     */
+    private $currentDayOfYear = 0;
+
+    /**
      * Current report fiscal year.
      *
      * @var integer
@@ -69,8 +76,12 @@ class CryptoInfoBag
      * @return void
      */
     public function setBalancesUntilDay($day) {
-        foreach ($this->cryptoInfo AS $cryptocurrency) {
-            $cryptocurrency->setBalancesUntilDay($day);
+        if ($this->currentDayOfYear < $day) {
+            foreach ($this->cryptoInfo AS $cryptocurrency) {
+                $cryptocurrency->setBalancesUntilDay($day);
+            }
+
+            $this->currentDayOfYear = $day;
         }
     }
 

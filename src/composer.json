@@ -13,7 +13,8 @@
         "twig/twig": "^3.3",
         "setasign/fpdf": "^1.8",
         "setasign/fpdi": "^2.3",
-        "phpoffice/phpspreadsheet": "^1.19"
+        "phpoffice/phpspreadsheet": "^1.19",
+        "spatie/once": "^2.2"
     },
     "autoload": {
        "psr-4": {

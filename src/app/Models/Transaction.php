@@ -67,18 +67,6 @@ class Transaction
         $this->setEarningCategory($rawTx[6] ?? '');
     }
 
-    public function getPurchaseAmountRemaining() {
-        if ($this->type === self::PURCHASE) {
-            return 0.0;
-        }
-
-        $purchaseAmountFound = array_sum(array_map(function($purchase) {
-            return $purchase['amount'];
-        }, $this->purchases));
-
-        return $this->amount - $purchaseAmountFound;
-    }
-
     public function incrementUsed($amount) {
         $this->used += $amount;
     }
