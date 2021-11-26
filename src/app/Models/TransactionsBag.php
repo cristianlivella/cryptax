@@ -4,6 +4,7 @@ namespace CrypTax\Models;
 
 use CrypTax\Exceptions\InvalidFileException;
 use CrypTax\Exceptions\CannotFindPurchasesException;
+use CrypTax\Utils\AesUtils;
 
 class TransactionsBag
 {
@@ -23,28 +24,41 @@ class TransactionsBag
     private $cryptoPurchases = [];
 
     public function __construct($transactionsFileContent) {
-        // create a temporary file, needed for PhpSpreadsheet
-        $tmpFile = tmpfile();
-        fwrite($tmpFile, $transactionsFileContent);
-        $filePath = stream_get_meta_data($tmpFile)['uri'];
+        $transactionsJsonKey = hash('sha256', $transactionsFileContent);
+        $transactionsJsonName = hash('sha256', $transactionsJsonKey . $transactionsFileContent);
+        $transactionsJsonFile = dirname(__FILE__) . '/../../tmp/' . $transactionsJsonName;
 
-        try {
-            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
-            $rawTransactions = $spreadsheet->getSheet(0)->toArray();
+        // check if the JSON cache of the transactions file already exists
+        if (file_exists($transactionsJsonFile)) {
+            $jsonFileContent = AesUtils::decrypt(file_get_contents($transactionsJsonFile), $transactionsJsonKey);
+            $rawTransactions = json_decode($jsonFileContent, true);
+        } else {
+            try {
+                // create a temporary file, needed for PhpSpreadsheet
+                $tmpFile = tmpfile();
+                fwrite($tmpFile, $transactionsFileContent);
+                $filePath = stream_get_meta_data($tmpFile)['uri'];
 
-            $dateFormat1 = '/[0-9]{1,2}\/[0-9]{1,2}\/[0-9]{4}/';
-            $dateFormat2 = '/[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}/';
+                // parse the spreadsheet file into an array
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+                $rawTransactions = $spreadsheet->getSheet(0)->toArray();
 
-            $firstTxDate = $rawTransactions[0][0] ?? false;
-            if ($firstTxDate !== false && !preg_match($dateFormat1, $firstTxDate) && !preg_match($dateFormat2, $firstTxDate)) {
-                // if the date of the first row is invalid, assume it's a header row and ignore it
-                unset($rawTransactions[0]);
+                // save the array in the JSON cache file
+                file_put_contents($transactionsJsonFile, AesUtils::encrypt(json_encode($rawTransactions), $transactionsJsonKey));
+            } catch (\Exception $e) {
+                throw new InvalidFileException();
+            } finally {
+                unlink($filePath);
             }
+        }
 
-            unlink($filePath);
-        } catch (\Exception $e) {
-            unlink($filePath);
-            throw new InvalidFileException();
+        $dateFormat1 = '/[0-9]{1,2}\/[0-9]{1,2}\/[0-9]{4}/';    // dd-mm-YYYY
+        $dateFormat2 = '/[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}/';      // YYYY-mm-dd
+
+        $firstTxDate = $rawTransactions[0][0] ?? false;
+        if ($firstTxDate !== false && !preg_match($dateFormat1, $firstTxDate) && !preg_match($dateFormat2, $firstTxDate)) {
+            // if the date of the first row is invalid, assume it's a header row and ignore it
+            unset($rawTransactions[0]);
         }
 
         // parse the transactions
