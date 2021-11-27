@@ -48,6 +48,8 @@ class Transaction
     public $exchange;
     public $earningCategory;
 
+    public $timestamp;
+
     public $used = 0.0;
     protected $purchases = [];
 
@@ -102,6 +104,7 @@ class Transaction
 
     private function setDate($date) {
         $this->date = DateUtils::getDateFromItFormat($date);
+        $this->timestamp = strtotime($this->date);
 
         if ($this->date === '1970-01-01' || $this->date > DateUtils::getToday()) {
             throw new InvalidTransactionException($this->id, 'date', $date);

@@ -72,7 +72,8 @@ class TransactionsBag
             if ($a->date === $b->date) {
                 return $a->id - $b->id;
             }
-            return strtotime($a->date) - strtotime($b->date);
+
+            return $a->timestamp - $b->timestamp;
         });
 
         foreach ($this->transactions AS $transaction) {

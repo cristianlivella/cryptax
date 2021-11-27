@@ -6,6 +6,7 @@ use DateTime;
 
 class DateUtils {
     private static $dateFromStringCache = [];
+    private static $yearFromDateCache = [];
 
     /**
      * Get date in Y-m-d format from string.
@@ -67,7 +68,11 @@ class DateUtils {
      * @return integer
      */
     public static function getYearFromDate($date) {
-        return intval(date('Y', strtotime($date)));
+        if (!isset(self::$yearFromDateCache[$date])) {
+            self::$yearFromDateCache[$date] = intval(date('Y', strtotime($date)));
+        }
+
+        return self::$yearFromDateCache[$date];
     }
 
     /**
