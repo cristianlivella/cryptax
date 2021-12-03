@@ -46,7 +46,7 @@ class WebAppController
     }
 
     public static function printReport() {
-        $year = $_GET['year'] ?? DateUtils::getCurrentYear();
+        $year = self::getSelectedYear();
 
         $settings = self::getSelectedReportSettings();
         $exchangeSettings = $settings['exchanges'] ?? [];
@@ -57,7 +57,7 @@ class WebAppController
     }
 
     public static function printModelloRedditi() {
-        $year = $_GET['year'] ?? DateUtils::getCurrentYear();
+        $year = self::getSelectedYear();
 
         $settings = self::getSelectedReportSettings();
         $compensateCapitalLosses = $settings['compensate_losses'] ?? true;
@@ -69,7 +69,7 @@ class WebAppController
     }
 
     public static function printModelloF24() {
-        $year = $_GET['year'] ?? DateUtils::getCurrentYear();
+        $year = self::getSelectedYear();
 
         $settings = self::getSelectedReportSettings();
         $compensateCapitalLosses = $settings['compensate_losses'] ?? true;
@@ -100,7 +100,7 @@ class WebAppController
 
         $reportWrapper = new ReportWrapper(AesUtils::decrypt(file_get_contents($filePath), $key));
 
-        setcookie('KEY-' . $reportId, $key, self::getCookieOptions());
+        self::setCookie('KEY-' . $reportId, $key);
 
         header('Content-type: application/json');
         echo json_encode(['report_id' => $reportId] + $reportWrapper->getSummary(true));
@@ -122,12 +122,16 @@ class WebAppController
             $settings['compensate_losses'] = filter_var($_POST['compensate_losses'] ?? true, FILTER_VALIDATE_BOOLEAN);
         }
 
-        setcookie('SETTINGS-' . $reportId, base64_encode(json_encode($settings)), self::getCookieOptions());
+        self::setCookie('SETTINGS-' . $reportId, base64_encode(json_encode($settings)));
+    }
+
+    private static function getSelectedYear() {
+        return isset($_GET['year']) ? intval($_GET['year']) : DateUtils::getCurrentYear();
     }
 
     private static function getSelectedReportContent() {
         $reportId = self::getSelectedReportId();
-        $filePath = dirname(__FILE__) . '/../../tmp/' . $reportId;
+        $filePath = dirname(__FILE__) . '/../../tmp/' . basename($reportId);
 
         if (strlen($reportId) !== 32 || !file_exists($filePath)) {
             throw new NotFoundException('report');
@@ -140,7 +144,7 @@ class WebAppController
     private static function getSelectedReportSettings() {
         $reportId = self::getSelectedReportId();
 
-        $filePath = dirname(__FILE__) . '/../../tmp/' . $reportId;
+        $filePath = dirname(__FILE__) . '/../../tmp/' . basename($reportId);
 
         if (strlen($reportId) !== 32 || !file_exists($filePath)) {
             throw new NotFoundException('report');
@@ -153,11 +157,7 @@ class WebAppController
         return $_GET['id'] ?? $_POST['id'] ?? null;
     }
 
-    private static function getCookieOptions() {
-        return [
-            'expires' => time() + 60 * 60 * 12,
-            'secure' => true,
-            'httponly' => true
-        ];
+    private static function setCookie($name, $value) {
+        setcookie($name, $value, time() + 60 * 60 * 12, '', '', true, true);
     }
 }

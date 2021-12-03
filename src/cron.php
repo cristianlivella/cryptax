@@ -4,6 +4,7 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 use CrypTax\Utils\CryptoInfoUtils;
+use CrypTax\Utils\DateUtils;
 use CrypTax\Utils\DbUtils;
 
 if (PHP_SAPI !== 'cli' || isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -33,4 +34,11 @@ $stmt->close();
 
 while ($resultArray = $result->fetch_assoc()) {
     CryptoInfoUtils::getCryptoPrice($resultArray['ticker'], $resultArray['date']);
+}
+
+// get most recent prices
+$result = DbUtils::getConnection()->query('SELECT DISTINCT(ticker) FROM cache WHERE 1');
+
+while ($resultArray = $result->fetch_assoc()) {
+    CryptoInfoUtils::getCryptoPrice($resultArray['ticker'], DateUtils::getToday());
 }

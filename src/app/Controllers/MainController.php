@@ -18,7 +18,7 @@ class MainController
     public static function run() {
         $reportWrapper = new ReportWrapper(file_get_contents(TRANSACTIONS_FILE));
 
-        $year = $_GET['year'] ?? DateUtils::getCurrentYear();
+        $year = isset($_GET['year']) ? intval($_GET['year']) : DateUtils::getCurrentYear();
         $action = $_GET['action'] ?? null;
         $compensateCapitalLosses = filter_var($_GET['compensate_losses'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
