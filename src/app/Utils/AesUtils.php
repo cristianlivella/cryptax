@@ -8,7 +8,7 @@ class AesUtils
 
     public static function encrypt($plain, $key) {
         $key = hex2bin($key);
-        $iv = hex2bin(md5(microtime() . random_int(PHP_INT_MIN, PHP_INT_MAX)));
+        $iv = random_bytes(16);
         $data = openssl_encrypt($plain, self::METHOD, $key, OPENSSL_RAW_DATA, $iv);
         return base64_encode($iv . $data);
     }
