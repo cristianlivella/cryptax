@@ -149,6 +149,7 @@ class CryptoInfoUtils
      * @return array
      */
     private static function getCryptoData($ticker, $date) {
+        $ticker = strtoupper($ticker);
         $date = DateUtils::getDateFromString($date);
 
         if (isset(CUSTOM_TICKERS[$ticker])) {
@@ -166,8 +167,6 @@ class CryptoInfoUtils
             self::$requestedTooLatePrices = true;
             return self::getCryptoData($ticker, DateUtils::getDateFromString('-3 days'));
         }
-
-        $ticker = strtoupper($ticker);
 
         if (!isset(self::$prices[$ticker][$date])) {
             self::$prices[$ticker][$date] = [

@@ -77,10 +77,11 @@ class TransactionsBag
         });
 
         foreach ($this->transactions AS $transaction) {
-            if ($transaction->type === Transaction::PURCHASE) {
+            if ($transaction->type === Transaction::PURCHASE || $transaction->type === Transaction::TRADE) {
                 $this->addCryptoPurchase($transaction);
-            } elseif ($transaction->type === Transaction::SALE || $transaction->type === Transaction::EXPENSE) {
-                $this->findRelativePurchases($transaction);
+            }
+            if ($transaction->type === Transaction::SALE || $transaction->type === Transaction::EXPENSE || $transaction->type === Transaction::TRADE) {
+                $this->findRelativePurchases($transaction, $transaction->type === Transaction::TRADE);
             }
         }
     }
@@ -112,16 +113,24 @@ class TransactionsBag
         $this->cryptoPurchases[$ticker][] = $transaction;
     }
 
-    private function findRelativePurchases($transaction) {
-        if (!isset($this->cryptoPurchases[$transaction->ticker])) {
-            throw new CannotFindPurchasesException($transaction->id, 0, $transaction->amount);
+    private function findRelativePurchases($transaction, $isTrade) {
+        if ($isTrade) {
+            $ticker = $transaction->baseCurrency;
+            $amount = $transaction->baseValue;
+        } else {
+            $ticker = $transaction->ticker;
+            $amount = $transaction->amount;
         }
 
-        $i = count($this->cryptoPurchases[$transaction->ticker]);
-        $purchaseAmountRemaining = $transaction->amount;
+        if (!isset($this->cryptoPurchases[$ticker])) {
+            throw new CannotFindPurchasesException($transaction->id, 0, $amount);
+        }
+
+        $i = count($this->cryptoPurchases[$ticker]);
+        $purchaseAmountRemaining = $amount;
 
         while ($purchaseAmountRemaining > 0 && $i-- > 0) {
-            $purchaseTransaction = $this->cryptoPurchases[$transaction->ticker][$i];
+            $purchaseTransaction = $this->cryptoPurchases[$ticker][$i];
             $partialUse = min($purchaseAmountRemaining, $purchaseTransaction->amount - $purchaseTransaction->used);
 
             if ($partialUse > 0) {
@@ -131,14 +140,14 @@ class TransactionsBag
             }
 
             if ($purchaseTransaction->amount === $purchaseTransaction->used) {
-                unset($this->cryptoPurchases[$transaction->ticker][$i]);
+                unset($this->cryptoPurchases[$ticker][$i]);
             }
         }
 
-        $this->cryptoPurchases[$transaction->ticker] = array_values($this->cryptoPurchases[$transaction->ticker]);
+        $this->cryptoPurchases[$ticker] = array_values($this->cryptoPurchases[$ticker]);
 
         if ($purchaseAmountRemaining > 0) {
-            throw new CannotFindPurchasesException($transaction->id, $purchaseAmountRemaining, $transaction->amount);
+            throw new CannotFindPurchasesException($transaction->id, $purchaseAmountRemaining, $amount);
         }
     }
 }

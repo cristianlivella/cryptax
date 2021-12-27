@@ -10,6 +10,9 @@ use CrypTax\Models\TransactionsBag;
 use CrypTax\Utils\DateUtils;
 use CrypTax\Utils\NumberUtils;
 
+// TODO: just for testing, need to implement this as an user settings (via the SETTINGS cookie, see MainController)
+const POSTPONE_CRYPTO_TO_CRYPTO_GAINS = true;
+
 class Report
 {
     const CAPITAL_GAINS_NO_TAX_AREA_THRESHOLD = 51645.69;
@@ -131,35 +134,35 @@ class Report
                 $this->cryptoInfoBag->decrementCryptoBalance($tx->ticker, $tx->amount, $tx);
 
                 if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
-                    $this->earningsBag->addEarning($tx->exchange, EarningsBag::CAPITAL_GAINS, null, $tx->getCapitalGain());
+                    $currentTxCapitalGain = $tx->getCapitalGain(POSTPONE_CRYPTO_TO_CRYPTO_GAINS);
+
+                    $this->earningsBag->addEarning($tx->exchange, EarningsBag::CAPITAL_GAINS, null, $currentTxCapitalGain);
+
+                    $this->currentYearIncome += $tx->value;
+                    $this->currentYearPurchaseCost += $tx->value - $currentTxCapitalGain;
+                    $this->elaborateSoldEarnings($tx);
 
                     if ($tx->type === Transaction::SALE) {
                         $this->currentYearInvestment -= $tx->value;
-                    }
-
-                    $this->currentYearIncome += $tx->value;
-                    $this->currentYearPurchaseCost += $tx->getRelativePurchaseCost();
-
-                    foreach ($tx->getRelativePurchases() AS $purchase) {
-                        $purchaseTx = $purchase['transaction'];
-
-                        if ($purchaseTx->earningCategory) {
-                             // this is just the profit realized by selling a crypto earning, it doesn't include capital gain
-                            $realizedProfit = $purchaseTx->value / $purchaseTx->amount * $purchase['amount'];
-
-                            if (DateUtils::getYearFromDate($purchaseTx->date) === $this->fiscalYear) {
-                                $type = EarningsBag::RAC;
-                            } else {
-                                $type = EarningsBag::RAP;
-                            }
-
-                            $this->earningsBag->addEarning($purchaseTx->exchange, $purchaseTx->earningCategory, $type, $realizedProfit);
-                        }
-                    }
-
-                    if ($tx->type === Transaction::SALE) {
                         $this->incrementExchangeVolume($tx->exchange, $tx->value);
                     }
+                }
+            } elseif ($tx->type === Transaction::TRADE) {
+                $this->cryptoInfoBag->decrementCryptoBalance($tx->baseCurrency, $tx->baseValue, $tx);
+                $this->cryptoInfoBag->incrementCryptoBalance($tx->ticker, $tx->amount, $tx);
+
+                if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
+                    $currentTxCapitalGain = $tx->getCapitalGain(false);
+
+                    if (!POSTPONE_CRYPTO_TO_CRYPTO_GAINS) {
+                        $this->earningsBag->addEarning($tx->exchange, EarningsBag::CAPITAL_GAINS, null, $tx->getCapitalGain(false));
+                        $this->currentYearIncome += $tx->value;
+                        $this->currentYearPurchaseCost += $tx->value - $currentTxCapitalGain;
+                    }
+
+                    $this->elaborateSoldEarnings($tx);
+
+                    $this->incrementExchangeVolume($tx->exchange, $tx->value);
                 }
             }
         }
@@ -441,5 +444,24 @@ class Report
         }
 
         $this->exchangeVolumes[$exchange] += $value;
+    }
+
+    private function elaborateSoldEarnings($tx) {
+        foreach ($tx->getRelativePurchases() AS $purchase) {
+            $purchaseTx = $purchase['transaction'];
+
+            if ($purchaseTx->earningCategory) {
+                 // this is just the profit realized by selling a crypto earning, it doesn't include capital gain
+                $realizedProfit = $purchaseTx->value / $purchaseTx->amount * $purchase['amount'];
+
+                if (DateUtils::getYearFromDate($purchaseTx->date) === $this->fiscalYear) {
+                    $type = EarningsBag::RAC;
+                } else {
+                    $type = EarningsBag::RAP;
+                }
+
+                $this->earningsBag->addEarning($purchaseTx->exchange, $purchaseTx->earningCategory, $type, $realizedProfit);
+            }
+        }
     }
 }
