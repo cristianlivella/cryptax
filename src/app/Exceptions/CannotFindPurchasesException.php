@@ -15,7 +15,7 @@ class CannotFindPurchasesException extends BaseException
     }
 
     public function __toString() {
-        return $this->getShortName() . ': Transaction ' . $this->transactionId . ', ' . round($this->foundAmount, 8) . ' found on the total of  ' . round($this->totalAmount);
+        return $this->getShortName() . ': Transaction ' . $this->transactionId . ', ' . round($this->foundAmount, 8) . ' found on the total of  ' . round($this->totalAmount, 8);
     }
 
     public function toJson() {
