@@ -137,7 +137,7 @@ class TransactionsBag
 
         $this->cryptoPurchases[$transaction->ticker] = array_values($this->cryptoPurchases[$transaction->ticker]);
 
-        if ($purchaseAmountRemaining > pow(10, -14)) {
+        if ($purchaseAmountRemaining > pow(10, -12)) {
             throw new CannotFindPurchasesException($transaction->id, $transaction->amount - $purchaseAmountRemaining, $transaction->amount);
         }
     }
