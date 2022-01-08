@@ -2,6 +2,7 @@
 
 namespace CrypTax\Models;
 
+use CrypTax\Exceptions\NegativeBalanceException;
 use CrypTax\Models\Transaction;
 use CrypTax\Utils\CryptoInfoUtils;
 use CrypTax\Utils\DateUtils;
@@ -101,7 +102,7 @@ class CryptoInfo
     public function incrementBalance($amount, $transaction = null) {
         $this->balance += $amount;
 
-        if ($this->balance < 0) {
+        if ($this->balance < 0 && abs($this->balance) > pow(10, -12)) {
             throw new NegativeBalanceException($this->ticker, $this->balance, $transaction ? $transaction->date : null);
         }
     }
