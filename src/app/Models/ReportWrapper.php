@@ -39,7 +39,7 @@ class ReportWrapper
         }
 
         $reportSummaries = $this->calculateCapitalLossesCompensation($reportSummaries);
-        $reportSummaries['interest_exchanges'] = $exchangeInterestList;
+        $reportSummaries['interest_exchanges'] = array_unique($exchangeInterestList);
         $reportSummaries['years_list'] = $yearsList;
 
         $this->report->elaborateReport($currentYear);
