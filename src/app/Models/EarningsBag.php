@@ -133,7 +133,9 @@ class EarningsBag
             }
 
             foreach ($types AS $type => $value) {
-                $totalValue += $value;
+                if (in_array($type, [self::RAC, self::NR])) {
+                    $totalValue += $value;
+                }
             }
         }
 
