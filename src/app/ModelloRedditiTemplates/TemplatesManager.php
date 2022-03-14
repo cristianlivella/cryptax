@@ -16,7 +16,8 @@ class TemplatesManager
         2017 => Template2017Rl::class,
         2018 => Template2018Rl::class,
         2019 => Template2019Rl::class,
-        2020 => Template2020Rl::class
+        2020 => Template2020Rl::class,
+        2021 => Template2021Rl::class,
     ];
 
     const TEMPLATES_RM = [
@@ -24,7 +25,8 @@ class TemplatesManager
         2017 => Template2017Rm::class,
         2018 => Template2018Rm::class,
         2019 => Template2019Rm::class,
-        2020 => Template2020Rm::class
+        2020 => Template2020Rm::class,
+        2021 => Template2021Rm::class,
     ];
 
     const TEMPLATES_RT = [
@@ -32,7 +34,8 @@ class TemplatesManager
         2017 => Template2017Rt::class,
         2018 => Template2018Rt::class,
         2019 => Template2019Rt::class,
-        2020 => Template2020Rt::class
+        2020 => Template2020Rt::class,
+        2021 => Template2021Rt::class,
     ];
 
     const TEMPLATES_RW = [
@@ -41,6 +44,7 @@ class TemplatesManager
         2018 => Template2018Rw::class,
         2019 => Template2019Rw::class,
         2020 => Template2020Rw::class,
+        2021 => Template2021Rw::class,
     ];
 
     public static function isTemplateAvailable($year) {
