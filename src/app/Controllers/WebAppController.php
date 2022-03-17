@@ -124,7 +124,7 @@ class WebAppController
         }
 
         if (isset($_POST['rw_final_value_method'])) {
-            $settings['rw_final_value_method'] = json_decode($_POST['rw_final_value_method'], true);
+            $settings['rw_final_value_method'] = $_POST['rw_final_value_method'];
         }
 
         self::setCookie('SETTINGS-' . $reportId, base64_encode(json_encode($settings)));
