@@ -162,10 +162,10 @@ class CryptoInfoUtils
             $ticker = CUSTOM_TICKERS[$ticker];
         }
 
-        if ($this->isEurStablecoin($ticker)) {
+        if (self::isEurStablecoin($ticker)) {
             return [
-                'name' => $this->getEurStablecoinRealTicker($ticker) . ' stablecoin',
-                'ticker' => $this->getEurStablecoinRealTicker($ticker),
+                'name' => self::getEurStablecoinRealTicker($ticker) . ' stablecoin',
+                'ticker' => self::getEurStablecoinRealTicker($ticker),
                 'price' => 1.0,
                 'required' => true,
                 'found' => true,
@@ -345,7 +345,7 @@ class CryptoInfoUtils
     }
 
     private static function isEurStablecoin(string $ticker): bool {
-        return $this->getEurStablecoinRealTicker($ticker) !== null;
+        return self::getEurStablecoinRealTicker($ticker) !== null;
     }
 
     private static function getEurStablecoinRealTicker(string $ticker): ?string {
