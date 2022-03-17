@@ -113,12 +113,12 @@ class ReportWrapper
         ]);
     }
 
-    public function getModelloRedditi($year, $compensateCapitalLosses = true) {
+    public function getModelloRedditi($year, $compensateCapitalLosses = true, $finalValueMethod = 'average_value') {
         $this->elaborateReport($year);
 
         $info = $this->report->getInfoForModelloRedditi() + [
             'rl' => $this->getSectionRlInfo($year),
-            'rw' => $this->report->getModelloRedditiSectionRwInfo(),
+            'rw' => $this->report->getModelloRedditiSectionRwInfo($finalValueMethod),
             'rt' => $this->getSectionRtInfo($year, $compensateCapitalLosses),
             'rm' => $this->getSectionRmInfo($year)
         ];

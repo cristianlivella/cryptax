@@ -393,14 +393,23 @@ class Report
      *
      * @return array
      */
-    public function getModelloRedditiSectionRwInfo() {
+    public function getModelloRedditiSectionRwInfo($finalValueMethod = 'average_value') {
+        if ($finalValueMethod === 'real_value') {
+            $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'];
+        } elseif ($finalValueMethod === 'real_value_more_incomes') {
+            $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'] + $this->currentYearIncome;
+        } else {
+            // fallback to average_value
+            $finalValue = $this->cryptoInfoBag->getTotalValues()['average_value'];
+        }
+
         return [
             'initial_value' => (
                 $this->fiscalYear === $this->getFirstYear() ?
                 $this->transactionsBag->transactions[1]->value :
                 $this->cryptoInfoBag->getTotalValues()['value_start_of_year']
             ),
-            'final_value' => $this->cryptoInfoBag->getTotalValues()['average_value']
+            'final_value' => $finalValue
         ];
     }
 

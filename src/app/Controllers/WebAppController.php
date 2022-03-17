@@ -62,10 +62,11 @@ class WebAppController
         $settings = self::getSelectedReportSettings();
         $compensateCapitalLosses = $settings['compensate_losses'] ?? true;
         $exchangeSettings = $settings['exchanges'] ?? [];
+        $finalValueMethod = $settings['rw_final_value_method'] ?? 'average_value';
 
         $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings);
 
-        echo $reportWrapper->getModelloRedditi($year, $compensateCapitalLosses);
+        echo $reportWrapper->getModelloRedditi($year, $compensateCapitalLosses, $finalValueMethod);
     }
 
     public static function printModelloF24() {
@@ -120,6 +121,10 @@ class WebAppController
 
         if (isset($_POST['compensate_losses'])) {
             $settings['compensate_losses'] = filter_var($_POST['compensate_losses'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (isset($_POST['rw_final_value_method'])) {
+            $settings['rw_final_value_method'] = json_decode($_POST['rw_final_value_method'], true);
         }
 
         self::setCookie('SETTINGS-' . $reportId, base64_encode(json_encode($settings)));
