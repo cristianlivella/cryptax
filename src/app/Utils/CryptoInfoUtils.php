@@ -12,6 +12,13 @@ class CryptoInfoUtils
     private const API_HOST = 'https://cryptohistory.one/api';
 
     /**
+     * List of stablecoins pegged to the euro.
+     *
+     * @var string[]
+     */
+    private const EUR_STABLECOINS = ['EURx'];
+
+    /**
      * Array cache with all requested cryptocurrency prices.
      *
      * @var array
@@ -153,6 +160,17 @@ class CryptoInfoUtils
 
         if (isset(CUSTOM_TICKERS[$ticker])) {
             $ticker = CUSTOM_TICKERS[$ticker];
+        }
+
+        if ($this->isEurStablecoin($ticker)) {
+            return [
+                'name' => $this->getEurStablecoinRealTicker($ticker) . ' stablecoin',
+                'ticker' => $this->getEurStablecoinRealTicker($ticker),
+                'price' => 1.0,
+                'required' => true,
+                'found' => true,
+                'fetched' => true
+            ];
         }
 
         // prices before the creation of Bitcoin do not exist
@@ -324,5 +342,19 @@ class CryptoInfoUtils
         }
 
         self::fetchCryptoDataFromDb($ticker, $date);
+    }
+
+    private static function isEurStablecoin(string $ticker): bool {
+        return $this->getEurStablecoinRealTicker($ticker) !== null;
+    }
+
+    private static function getEurStablecoinRealTicker(string $ticker): ?string {
+        foreach (self::EUR_STABLECOINS AS $stablecoin) {
+            if (strtolower($stablecoin) === strtolower($ticker)) {
+                return $stablecoin;
+            }
+        }
+
+        return null;
     }
 }
