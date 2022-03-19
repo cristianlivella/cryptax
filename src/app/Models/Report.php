@@ -120,11 +120,11 @@ class Report
                 $this->cryptoInfoBag->incrementCryptoBalance($tx->ticker, $tx->amount, $tx);
 
                 if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
+                    $this->currentYearInvestment += $tx->value;
+                    $this->incrementExchangeVolume($tx->exchange, $tx->value);
+
                     if ($tx->earningCategory) {
                         $this->earningsBag->addEarning($tx->exchange, $tx->earningCategory, EarningsBag::NR, $tx->value);
-                    } else {
-                        $this->currentYearInvestment += $tx->value;
-                        $this->incrementExchangeVolume($tx->exchange, $tx->value);
                     }
                 }
             } elseif ($tx->type === Transaction::SALE || $tx->type === Transaction::EXPENSE) {
@@ -132,10 +132,8 @@ class Report
 
                 if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
                     $this->earningsBag->addEarning($tx->exchange, EarningsBag::CAPITAL_GAINS, null, $tx->getCapitalGain());
-
-                    if ($tx->type === Transaction::SALE) {
-                        $this->currentYearInvestment -= $tx->value;
-                    }
+                    $this->currentYearInvestment -= $tx->value;
+                    $this->incrementExchangeVolume($tx->exchange, $tx->value);
 
                     $this->currentYearIncome += $tx->value;
                     $this->currentYearPurchaseCost += $tx->getRelativePurchaseCost();
@@ -155,10 +153,6 @@ class Report
 
                             $this->earningsBag->addEarning($purchaseTx->exchange, $purchaseTx->earningCategory, $type, $realizedProfit);
                         }
-                    }
-
-                    if ($tx->type === Transaction::SALE) {
-                        $this->incrementExchangeVolume($tx->exchange, $tx->value);
                     }
                 }
             }
@@ -397,7 +391,7 @@ class Report
         if ($finalValueMethod === 'real_value') {
             $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'];
         } elseif ($finalValueMethod === 'real_value_more_incomes') {
-            $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'] + $this->currentYearIncome;
+            $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'] - min($this->currentYearInvestment, 0);
         } else {
             // fallback to average_value
             $finalValue = $this->cryptoInfoBag->getTotalValues()['average_value'];
