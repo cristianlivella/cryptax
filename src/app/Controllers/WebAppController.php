@@ -50,8 +50,9 @@ class WebAppController
 
         $settings = self::getSelectedReportSettings();
         $exchangeSettings = $settings['exchanges'] ?? [];
+        $considerEarningsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
 
-        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings);
+        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings, $considerEarningsAndExpensesAsInvestment);
 
         echo $reportWrapper->getReport($year);
     }
@@ -63,8 +64,9 @@ class WebAppController
         $compensateCapitalLosses = $settings['compensate_losses'] ?? true;
         $exchangeSettings = $settings['exchanges'] ?? [];
         $finalValueMethod = $settings['rw_final_value_method'] ?? 'average_value';
+        $considerEarningsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
 
-        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings);
+        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings, $considerEarningsAndExpensesAsInvestment);
 
         echo $reportWrapper->getModelloRedditi($year, $compensateCapitalLosses, $finalValueMethod);
     }
@@ -125,6 +127,10 @@ class WebAppController
 
         if (isset($_POST['rw_final_value_method'])) {
             $settings['rw_final_value_method'] = $_POST['rw_final_value_method'];
+        }
+
+        if (isset($_POST['consider_earnings_and_expenses_as_investment'])) {
+            $settings['consider_earnings_and_expenses_as_investment'] = $_POST['consider_earnings_and_expenses_as_investment'];
         }
 
         self::setCookie('SETTINGS-' . $reportId, base64_encode(json_encode($settings)));

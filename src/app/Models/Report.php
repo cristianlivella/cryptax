@@ -74,15 +74,30 @@ class Report
     private array $exchangeInterestTypes = [];
 
     /**
+     * Consider earns and expenses as investment.
+     *
+     * @var bool
+     */
+    private bool $considerEarningsAndExpensesAsInvestment = true;
+
+    /**
+     * There is at least an earn or expense transaction.
+     *
+     * @var bool
+     */
+    private bool $hasEarningsOrExpenses = false;
+
+    /**
      * Selected fiscal year.
      *
      * @var integer|null
      */
     private ?int $fiscalYear = null;
 
-    public function __construct($transactionsFileContent, $exchangeInterestTypes = []) {
+    public function __construct($transactionsFileContent, $exchangeInterestTypes = [], bool $considerEarningsAndExpensesAsInvestment = true) {
         $this->transactionsBag = new TransactionsBag($transactionsFileContent);
         $this->exchangeInterestTypes = $exchangeInterestTypes;
+        $this->considerEarningsAndExpensesAsInvestment = $considerEarningsAndExpensesAsInvestment;
     }
 
     /**
@@ -111,6 +126,10 @@ class Report
                 $this->cryptoInfoBag->saveStartOfYearSnapshot();
             }
 
+            if ($tx->earningCategory || $tx->type === Transaction::EXPENSE) {
+                $this->hasEarningsOrExpenses = true;
+            }
+
             if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
                 // Set the daily cryptocurrencies balances until reach the current transaction date.
                 $this->cryptoInfoBag->setBalancesUntilDay(DateUtils::getDayOfYear($tx->date));
@@ -120,11 +139,13 @@ class Report
                 $this->cryptoInfoBag->incrementCryptoBalance($tx->ticker, $tx->amount, $tx);
 
                 if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
-                    $this->currentYearInvestment += $tx->value;
-                    $this->incrementExchangeVolume($tx->exchange, $tx->value);
-
                     if ($tx->earningCategory) {
                         $this->earningsBag->addEarning($tx->exchange, $tx->earningCategory, EarningsBag::NR, $tx->value);
+                    }
+
+                    if (!$tx->earningCategory || $this->considerEarningsAndExpensesAsInvestment) {
+                        $this->currentYearInvestment += $tx->value;
+                        $this->incrementExchangeVolume($tx->exchange, $tx->value);
                     }
                 }
             } elseif ($tx->type === Transaction::SALE || $tx->type === Transaction::EXPENSE) {
@@ -132,8 +153,11 @@ class Report
 
                 if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
                     $this->earningsBag->addEarning($tx->exchange, EarningsBag::CAPITAL_GAINS, null, $tx->getCapitalGain());
-                    $this->currentYearInvestment -= $tx->value;
-                    $this->incrementExchangeVolume($tx->exchange, $tx->value);
+
+                    if ($tx->type === Transaction::SALE || $this->considerEarningsAndExpensesAsInvestment) {
+                        $this->currentYearInvestment -= $tx->value;
+                        $this->incrementExchangeVolume($tx->exchange, $tx->value);
+                    }
 
                     $this->currentYearIncome += $tx->value;
                     $this->currentYearPurchaseCost += $tx->getRelativePurchaseCost();
@@ -337,7 +361,8 @@ class Report
             'should_fill_modello_redditi' => $this->shouldFillRL() || $this->shouldFillRW() || $this->shouldFillRT() || $this->shouldFillRM(),
             'modello_redditi_available' => TemplatesManager::isTemplateAvailable($this->getCurrentYear()),
             'should_fill_f24' => $this->shouldFillRT() || $this->shouldFillRM(),
-            'interest_exchanges' => $this->earningsBag->getExchangeInterestList()
+            'interest_exchanges' => $this->earningsBag->getExchangeInterestList(),
+            'has_earnings_or_expenses' => $this->hasEarningsOrExpenses
         ];
     }
 
@@ -425,6 +450,7 @@ class Report
         $this->currentYearPurchaseCost = 0.0;
         $this->currentYearIncome = 0.0;
         $this->exchangeVolumes = [];
+        $this->hasEarningsOrExpenses = false;
 
         \Spatie\Once\Cache::flush();
     }
