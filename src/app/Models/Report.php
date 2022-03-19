@@ -391,7 +391,7 @@ class Report
         if ($finalValueMethod === 'real_value') {
             $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'];
         } elseif ($finalValueMethod === 'real_value_more_incomes') {
-            $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'] + $this->currentYearIncome;
+            $finalValue = $this->cryptoInfoBag->getTotalValues()['value_end_of_year'] - min($this->currentYearInvestment, 0);
         } else {
             // fallback to average_value
             $finalValue = $this->cryptoInfoBag->getTotalValues()['average_value'];
