@@ -50,9 +50,9 @@ class WebAppController
 
         $settings = self::getSelectedReportSettings();
         $exchangeSettings = $settings['exchanges'] ?? [];
-        $considerEarnsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
+        $considerEarningsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
 
-        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings, $considerEarnsAndExpensesAsInvestment);
+        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings, $considerEarningsAndExpensesAsInvestment);
 
         echo $reportWrapper->getReport($year);
     }
@@ -64,9 +64,9 @@ class WebAppController
         $compensateCapitalLosses = $settings['compensate_losses'] ?? true;
         $exchangeSettings = $settings['exchanges'] ?? [];
         $finalValueMethod = $settings['rw_final_value_method'] ?? 'average_value';
-        $considerEarnsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
+        $considerEarningsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
 
-        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings, $considerEarnsAndExpensesAsInvestment);
+        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings, $considerEarningsAndExpensesAsInvestment);
 
         echo $reportWrapper->getModelloRedditi($year, $compensateCapitalLosses, $finalValueMethod);
     }

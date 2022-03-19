@@ -11,8 +11,8 @@ class ReportWrapper
 {
     private Report $report;
 
-    public function __construct($transactionsFileContent, $exchangeInterestTypes = [], bool $considerEarnsAndExpensesAsInvestment = true) {
-        $this->report = new Report($transactionsFileContent, $exchangeInterestTypes, $considerEarnsAndExpensesAsInvestment);
+    public function __construct($transactionsFileContent, $exchangeInterestTypes = [], bool $considerEarningsAndExpensesAsInvestment = true) {
+        $this->report = new Report($transactionsFileContent, $exchangeInterestTypes, $considerEarningsAndExpensesAsInvestment);
     }
 
     public function getSummary($rawValues = false) {

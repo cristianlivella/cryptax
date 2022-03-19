@@ -78,7 +78,7 @@ class Report
      *
      * @var bool
      */
-    private bool $considerEarnsAndExpensesAsInvestment = true;
+    private bool $considerEarningsAndExpensesAsInvestment = true;
 
     /**
      * There is at least an earn or expense transaction.
@@ -94,10 +94,10 @@ class Report
      */
     private ?int $fiscalYear = null;
 
-    public function __construct($transactionsFileContent, $exchangeInterestTypes = [], bool $considerEarnsAndExpensesAsInvestment = true) {
+    public function __construct($transactionsFileContent, $exchangeInterestTypes = [], bool $considerEarningsAndExpensesAsInvestment = true) {
         $this->transactionsBag = new TransactionsBag($transactionsFileContent);
         $this->exchangeInterestTypes = $exchangeInterestTypes;
-        $this->considerEarnsAndExpensesAsInvestment = $considerEarnsAndExpensesAsInvestment;
+        $this->considerEarningsAndExpensesAsInvestment = $considerEarningsAndExpensesAsInvestment;
     }
 
     /**
@@ -143,7 +143,7 @@ class Report
                         $this->earningsBag->addEarning($tx->exchange, $tx->earningCategory, EarningsBag::NR, $tx->value);
                     }
 
-                    if (!$tx->earningCategory || $this->considerEarnsAndExpensesAsInvestment) {
+                    if (!$tx->earningCategory || $this->considerEarningsAndExpensesAsInvestment) {
                         $this->currentYearInvestment += $tx->value;
                         $this->incrementExchangeVolume($tx->exchange, $tx->value);
                     }
@@ -154,7 +154,7 @@ class Report
                 if (DateUtils::getYearFromDate($tx->date) === $this->fiscalYear) {
                     $this->earningsBag->addEarning($tx->exchange, EarningsBag::CAPITAL_GAINS, null, $tx->getCapitalGain());
 
-                    if ($tx->type === Transaction::SALE || $this->considerEarnsAndExpensesAsInvestment) {
+                    if ($tx->type === Transaction::SALE || $this->considerEarningsAndExpensesAsInvestment) {
                         $this->currentYearInvestment -= $tx->value;
                         $this->incrementExchangeVolume($tx->exchange, $tx->value);
                     }
