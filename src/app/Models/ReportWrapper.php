@@ -11,8 +11,8 @@ class ReportWrapper
 {
     private Report $report;
 
-    public function __construct($transactionsFileContent, $exchangeInterestTypes = []) {
-        $this->report = new Report($transactionsFileContent, $exchangeInterestTypes);
+    public function __construct($transactionsFileContent, $exchangeInterestTypes = [], bool $considerEarnsAndExpensesAsInvestment = true) {
+        $this->report = new Report($transactionsFileContent, $exchangeInterestTypes, $considerEarnsAndExpensesAsInvestment);
     }
 
     public function getSummary($rawValues = false) {
@@ -25,6 +25,7 @@ class ReportWrapper
         $reportSummaries = [];
         $exchangeInterestList = [];
         $yearsList = [];
+        $hasEarningsOrExpenses = false;
 
         for ($year = $this->report->getFirstYear(); $year <= $this->report->getLastYear(); $year++) {
             $this->report->elaborateReport($year);
@@ -34,12 +35,14 @@ class ReportWrapper
                 $reportSummaries['years'][$year] = $summary;
 
                 $exchangeInterestList = array_merge($exchangeInterestList, $reportSummaries['years'][$year]['interest_exchanges']);
+                $hasEarningsOrExpenses = $hasEarningsOrExpenses || $reportSummaries['years'][$year]['has_earnings_or_expenses'];
                 $yearsList[] = $year;
             }
         }
 
         $reportSummaries = $this->calculateCapitalLossesCompensation($reportSummaries);
         $reportSummaries['interest_exchanges'] = array_unique($exchangeInterestList);
+        $reportSummaries['has_earnings_or_expenses'] = $hasEarningsOrExpenses;
         $reportSummaries['years_list'] = $yearsList;
 
         $this->report->elaborateReport($currentYear);
