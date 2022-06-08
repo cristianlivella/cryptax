@@ -115,6 +115,7 @@ class WebAppController
 
     public static function getInfo() {
         $reportId = self::getSelectedReportId();
+        $settings = self::getSelectedReportSettings();
 
         $exchangeSettings = $settings['exchanges'] ?? [];
         $considerEarningsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
