@@ -18,6 +18,7 @@ class WebAppController
     const ACTION_PDF_MODELLO_REDDITI = 'pdf_modello_redditi';
     const ACTION_PDF_MODELLO_F24 = 'pdf_modello_f24';
     const ACTION_UPLOAD = 'upload';
+    const ACTION_GET_INFO = 'get_info';
     const ACTION_SET_SETTINGS = 'set_settings';
 
     public static function run() {
@@ -35,6 +36,9 @@ class WebAppController
                 break;
             case self::ACTION_UPLOAD:
                 self::upload();
+                break;
+            case self::ACTION_GET_INFO:
+                self::getInfo();
                 break;
             case self::ACTION_SET_SETTINGS:
                 self::setSettings();
@@ -104,6 +108,18 @@ class WebAppController
         $reportWrapper = new ReportWrapper(AesUtils::decrypt(file_get_contents($filePath), $key));
 
         self::setCookie('KEY-' . $reportId, $key);
+
+        header('Content-type: application/json');
+        echo json_encode(['report_id' => $reportId] + $reportWrapper->getSummary(true));
+    }
+
+    public static function getInfo() {
+        $reportId = self::getSelectedReportId();
+
+        $exchangeSettings = $settings['exchanges'] ?? [];
+        $considerEarningsAndExpensesAsInvestment = $settings['consider_earnings_and_expenses_as_investment'] ?? true;
+
+        $reportWrapper = new ReportWrapper(self::getSelectedReportContent(), $exchangeSettings, $considerEarningsAndExpensesAsInvestment);
 
         header('Content-type: application/json');
         echo json_encode(['report_id' => $reportId] + $reportWrapper->getSummary(true));
