@@ -18,8 +18,8 @@ abstract class ModelloRedditiRw
         $template->setValue('valore_finale', round($info['rw']['final_value']));
 
         $requiredSections = 0;
-        foreach ($info['sections_required'] AS $required) {
-            if ($required) {
+        foreach ($info['sections_required'] AS $section => $required) {
+            if ($section !== 'rw' && $required) {
                 $requiredSections++;
             }
         }
