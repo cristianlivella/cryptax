@@ -4,8 +4,7 @@ namespace CrypTax\ModelloRedditiTemplates;
 
 use CrypTax\Exceptions\InvalidYearException;
 
-class TemplatesManager
-{
+class TemplatesManager {
     const TYPE_RL = 'rl';
     const TYPE_RM = 'rm';
     const TYPE_RT = 'rt';
@@ -18,6 +17,7 @@ class TemplatesManager
         2019 => Template2019Rl::class,
         2020 => Template2020Rl::class,
         2021 => Template2021Rl::class,
+        2022 => Template2022Rl::class,
     ];
 
     const TEMPLATES_RM = [
@@ -27,6 +27,7 @@ class TemplatesManager
         2019 => Template2019Rm::class,
         2020 => Template2020Rm::class,
         2021 => Template2021Rm::class,
+        2022 => Template2022Rm::class,
     ];
 
     const TEMPLATES_RT = [
@@ -36,6 +37,7 @@ class TemplatesManager
         2019 => Template2019Rt::class,
         2020 => Template2020Rt::class,
         2021 => Template2021Rt::class,
+        2022 => Template2022Rt::class,
     ];
 
     const TEMPLATES_RW = [
@@ -45,6 +47,7 @@ class TemplatesManager
         2019 => Template2019Rw::class,
         2020 => Template2020Rw::class,
         2021 => Template2021Rw::class,
+        2022 => Template2022Rw::class,
     ];
 
     public static function isTemplateAvailable($year) {
