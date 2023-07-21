@@ -361,7 +361,7 @@ class Report
             'should_fill_modello_redditi' => $this->shouldFillRL() || $this->shouldFillRW() || $this->shouldFillRT() || $this->shouldFillRM(),
             'modello_redditi_available' => TemplatesManager::isTemplateAvailable($this->getCurrentYear()),
             'should_fill_f24' => $this->shouldFillRT() || $this->shouldFillRM(),
-            'interest_exchanges' => $this->earningsBag->getExchangeInterestList(),
+            'interest_exchanges' => array_values($this->earningsBag->getExchangeInterestList()),
             'has_earnings_or_expenses' => $this->hasEarningsOrExpenses
         ];
     }
