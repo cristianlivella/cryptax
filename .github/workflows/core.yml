@@ -11,9 +11,6 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-    - name: Public IP
-      id: ip
-      uses: haythem/public-ip@v1.2
     - name: Get latest code
       uses: actions/checkout@v2.3.2
       with:
